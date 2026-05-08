@@ -31,6 +31,27 @@ CRM interno para una academia. Cubre captación y seguimiento de **leads**, alta
 - **Auth**: aún por decidir (JWT en cookie httpOnly vs Auth0/Clerk vs sesiones). No empezar el módulo de auth hasta cerrarlo. Mientras tanto, dejar el frontend con un `AuthContext` mockeable.
 - **Gestor de paquetes del monorepo**: pnpm vs npm workspaces. Recomendación: pnpm.
 
+## 2.b Identidad de marca — Plató Centre d'estudis
+
+**Logo:** SVG vectorial en `apps/frontend/src/assets/logo/plato-logo.svg`. Importar como URL (`import logo from '@/assets/logo/plato-logo.svg'`) y renderizar en `<img>`. Es horizontal (ratio ~3:1), pensado para header/navbar. Para favicon se necesitaría una versión cuadrada recortada (icono solo, sin wordmark) — pendiente.
+
+**Tipografía:** Montserrat (instalada en `apps/frontend/src/assets/fonts/montserrat/`).
+
+**Paleta oficial:**
+
+| Rol | Color | Hex | RGB |
+|---|---|---|---|
+| Burgundy (primario) | borgoña | `#691a37` | 106 26 55 |
+| Cream (acento) | crema | `#f4cea1` | 244 206 161 |
+| Black | negro | `#000000` | 0 0 0 |
+| White | blanco | `#ffffff` | 255 255 255 |
+
+**Cómo usarla en código:**
+- Tokens semánticos shadcn: `bg-primary` (borgoña), `bg-accent`/`bg-secondary` (crema), `text-foreground` (negro), `bg-background` (blanco), `ring-ring` (borgoña). Estos cambian automáticamente en dark mode.
+- Utilidades de marca invariantes (mismo color en light/dark): `bg-brand-burgundy`, `bg-brand-cream`, `bg-brand-black`, `bg-brand-white` (y sus variantes `text-*`, `border-*`). Usar solo cuando se quiera el color literal de marca, no el rol semántico.
+- En **dark mode** la borgoña se aclara a `oklch(0.55 0.18 5)` para mantener contraste sobre fondo negro. La crema se mantiene igual.
+- No introducir colores fuera de paleta sin justificarlo. Para gráficos usar `--chart-1..5` (definidos en `index.css`).
+
 ## 3. Estructura del repositorio
 
 ```
