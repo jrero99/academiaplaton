@@ -118,5 +118,5 @@ pnpm typecheck              # tsc --noEmit en todos los workspaces
 
 ## 8. Estado actual del proyecto
 
-- Monorepo montado: `apps/frontend` (Vite + React 19 + TSX), `apps/backend` (Express + Prisma + MySQL skeleton), `packages/shared` (Zod + DTOs skeleton).
-- **Pendiente**: añadir Tailwind + shadcn, decidir auth, ejecutar `pnpm install` por primera vez, crear primera migración Prisma.
+- Monorepo montado: `apps/frontend` (Vite + React 19 + TSX + Tailwind v4 + shadcn/ui configurado), `apps/backend` (Express + Prisma + MySQL skeleton), `packages/shared` (Zod + DTOs skeleton).
+- **Pendiente**: ejecutar `pnpm install` por primera vez (requiere activar pnpm vía `corepack enable` con permisos de admin), añadir componentes shadcn (`pnpm dlx shadcn@latest add button`), decidir auth, crear primera migración Prisma.
