@@ -1,0 +1,22 @@
+{
+  "name": "academiaplaton",
+  "private": true,
+  "version": "0.0.0",
+  "description": "CRM de Academia Platón — leads, alumnos, recibos y horarios.",
+  "packageManager": "pnpm@9.12.0",
+  "scripts": {
+    "dev:frontend": "pnpm --filter @academiaplaton/frontend dev",
+    "dev:backend": "pnpm --filter @academiaplaton/backend dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "e2e": "pnpm --filter @academiaplaton/frontend e2e",
+    "prisma:migrate": "pnpm --filter @academiaplaton/backend prisma:migrate",
+    "prisma:generate": "pnpm --filter @academiaplaton/backend prisma:generate",
+    "prisma:studio": "pnpm --filter @academiaplaton/backend prisma:studio"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
