@@ -1,5 +1,5 @@
-// Schema Prisma — Academia Platón CRM
-// Datasource MySQL.
+// Schema Prisma — Plató SaaS (multi-tenant).
+// Cada Organization es un tenant. Toda entidad de dominio lleva organizationId.
 
 generator client {
   provider = "prisma-client-js"
@@ -9,6 +9,74 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tenancy
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  admin
+  staff
+  teacher
+}
+
+model Organization {
+  id   String @id @default(uuid()) @db.Char(36)
+  slug String @unique @db.VarChar(80)
+  name String @db.VarChar(160)
+
+  // Branding (white-label)
+  logoUrl       String? @db.VarChar(500)
+  primaryColor  String? @db.Char(7) // hex #RRGGBB
+  accentColor   String? @db.Char(7)
+
+  // Módulos habilitados (CSV simple en MySQL: "crm,billing,scheduling,communications").
+  // Con MySQL no hay arrays nativos, usamos String. Validación con Zod en el backend.
+  enabledModules String @default("crm") @db.VarChar(255)
+
+  // Integraciones (cifrado en backend antes de guardar)
+  n8nWebhookUrl       String? @db.VarChar(500)
+  whatsappPhoneNumberId String? @db.VarChar(80)
+  whatsappAccessToken   String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships UserOrganization[]
+  leads       Lead[]
+  students    Student[]
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Char(36)
+  email        String   @unique @db.VarChar(160)
+  passwordHash String   @db.VarChar(255)
+  firstName    String   @db.VarChar(80)
+  lastName     String   @db.VarChar(120)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships UserOrganization[]
+}
+
+model UserOrganization {
+  id             String   @id @default(uuid()) @db.Char(36)
+  userId         String   @db.Char(36)
+  organizationId String   @db.Char(36)
+  role           UserRole
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CRM — Leads y Students
+// ─────────────────────────────────────────────────────────────────────────────
 
 enum LeadStatus {
   new
@@ -37,6 +105,7 @@ enum GuardianRelationship {
 
 model Lead {
   id               String     @id @default(uuid()) @db.Char(36)
+  organizationId   String     @db.Char(36)
   firstName        String     @db.VarChar(80)
   lastName         String     @db.VarChar(120)
   email            String?    @db.VarChar(160)
@@ -48,31 +117,34 @@ model Lead {
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   convertedStudent Student?
 
-  @@index([status])
-  @@index([source])
-  @@index([createdAt])
+  @@index([organizationId, status])
+  @@index([organizationId, source])
+  @@index([organizationId, createdAt])
 }
 
 model Student {
-  id        String   @id @default(uuid()) @db.Char(36)
-  firstName String   @db.VarChar(80)
-  lastName  String   @db.VarChar(120)
-  birthDate DateTime @db.Date
-  email     String?  @db.VarChar(160)
-  phone     String?  @db.VarChar(20)
-  address   String?  @db.VarChar(240)
-  notes     String?  @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(uuid()) @db.Char(36)
+  organizationId String   @db.Char(36)
+  firstName      String   @db.VarChar(80)
+  lastName       String   @db.VarChar(120)
+  birthDate      DateTime @db.Date
+  email          String?  @db.VarChar(160)
+  phone          String?  @db.VarChar(20)
+  address        String?  @db.VarChar(240)
+  notes          String?  @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   fromLeadId String? @unique @db.Char(36)
   fromLead   Lead?   @relation(fields: [fromLeadId], references: [id], onDelete: SetNull)
 
-  guardians Guardian[]
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  guardians    Guardian[]
 
-  @@index([lastName, firstName])
+  @@index([organizationId, lastName, firstName])
 }
 
 model Guardian {

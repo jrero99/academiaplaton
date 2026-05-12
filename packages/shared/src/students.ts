@@ -30,6 +30,7 @@ export type StudentUpdate = z.infer<typeof StudentUpdateSchema>;
 
 export const StudentDtoSchema = StudentCreateSchema.extend({
   id: z.string().uuid(),
+  organizationId: z.string().uuid(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });

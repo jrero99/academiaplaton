@@ -13,6 +13,7 @@ type StudentWithGuardians = Student & { guardians: Guardian[] };
 function toDto(s: StudentWithGuardians): StudentDto {
   return {
     id: s.id,
+    organizationId: s.organizationId,
     firstName: s.firstName,
     lastName: s.lastName,
     birthDate: s.birthDate.toISOString().slice(0, 10),

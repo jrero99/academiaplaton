@@ -1,0 +1,111 @@
+import type { StudentDto } from '@academiaplaton/shared';
+
+const ORG_ID = '00000000-0000-0000-0000-000000000001';
+
+export const MOCK_STUDENTS: StudentDto[] = [
+  {
+    id: '22222222-2222-2222-2222-222222222201',
+    organizationId: ORG_ID,
+    firstName: 'Ona',
+    lastName: 'Pujol Vidal',
+    birthDate: '2009-03-12',
+    email: 'ona.pujol@example.com',
+    phone: '+34 612 000 111',
+    address: 'Carrer Major 23, Sabadell',
+    guardians: [
+      {
+        firstName: 'Marta',
+        lastName: 'Vidal',
+        relationship: 'mother',
+        phone: '+34 678 432 110',
+        email: 'marta.vidal@example.com',
+      },
+    ],
+    createdAt: '2026-01-12T09:00:00.000Z',
+    updatedAt: '2026-04-22T15:30:00.000Z',
+  },
+  {
+    id: '22222222-2222-2222-2222-222222222202',
+    organizationId: ORG_ID,
+    firstName: 'Hugo',
+    lastName: 'Riera Mas',
+    birthDate: '2011-07-04',
+    email: 'hugo.riera@example.com',
+    address: 'Avinguda Catalunya 45, Terrassa',
+    guardians: [
+      {
+        firstName: 'Pere',
+        lastName: 'Riera',
+        relationship: 'father',
+        phone: '+34 666 200 109',
+      },
+    ],
+    createdAt: '2025-09-04T08:30:00.000Z',
+    updatedAt: '2026-03-18T11:00:00.000Z',
+  },
+  {
+    id: '22222222-2222-2222-2222-222222222203',
+    organizationId: ORG_ID,
+    firstName: 'Berta',
+    lastName: 'Cases Llobet',
+    birthDate: '2008-11-25',
+    email: 'berta.cases@example.com',
+    phone: '+34 633 411 222',
+    guardians: [
+      {
+        firstName: 'Isabel',
+        lastName: 'Llobet',
+        relationship: 'mother',
+        phone: '+34 622 008 991',
+        email: 'isabel.llobet@example.com',
+      },
+      {
+        firstName: 'Joan',
+        lastName: 'Cases',
+        relationship: 'father',
+        phone: '+34 644 119 887',
+      },
+    ],
+    createdAt: '2025-09-15T17:20:00.000Z',
+    updatedAt: '2026-04-30T10:45:00.000Z',
+  },
+  {
+    id: '22222222-2222-2222-2222-222222222204',
+    organizationId: ORG_ID,
+    firstName: 'Nil',
+    lastName: 'Camps Aymar',
+    birthDate: '2010-05-18',
+    phone: '+34 611 305 442',
+    guardians: [
+      {
+        firstName: 'Anna',
+        lastName: 'Aymar',
+        relationship: 'mother',
+        phone: '+34 689 220 113',
+      },
+    ],
+    createdAt: '2026-02-01T12:00:00.000Z',
+    updatedAt: '2026-05-04T09:10:00.000Z',
+  },
+  {
+    id: '22222222-2222-2222-2222-222222222205',
+    organizationId: ORG_ID,
+    firstName: 'Carla',
+    lastName: 'Font Roig',
+    birthDate: '2007-09-30',
+    email: 'carla.font@example.com',
+    phone: '+34 678 554 211',
+    fromLeadId: '11111111-1111-1111-1111-111111111105',
+    guardians: [
+      {
+        firstName: 'Sergi',
+        lastName: 'Font',
+        relationship: 'father',
+        phone: '+34 696 555 014',
+        email: 'sergi.font@example.com',
+      },
+    ],
+    createdAt: '2026-05-03T12:15:00.000Z',
+    updatedAt: '2026-05-03T12:15:00.000Z',
+  },
+];

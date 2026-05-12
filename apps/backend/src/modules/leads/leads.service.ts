@@ -6,6 +6,7 @@ import { leadsRepo } from './leads.repo.js';
 function toDto(lead: Lead): LeadDto {
   return {
     id: lead.id,
+    organizationId: lead.organizationId,
     firstName: lead.firstName,
     lastName: lead.lastName,
     email: lead.email ?? undefined,

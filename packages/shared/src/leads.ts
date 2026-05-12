@@ -39,6 +39,7 @@ export type LeadUpdate = z.infer<typeof LeadUpdateSchema>;
 
 export const LeadDtoSchema = LeadCreateSchema.extend({
   id: z.string().uuid(),
+  organizationId: z.string().uuid(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
