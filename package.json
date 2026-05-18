@@ -5,8 +5,10 @@
   "description": "CRM de Academia Platón — leads, alumnos, recibos y horarios.",
   "packageManager": "pnpm@9.12.0",
   "scripts": {
-    "dev:frontend": "pnpm --filter @academiaplaton/frontend dev",
-    "dev:backend": "pnpm --filter @academiaplaton/backend dev",
+    "brief:front": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/brief-agent.ps1 -Agent front",
+    "brief:back": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/brief-agent.ps1 -Agent back",
+    "dev:frontend": "pnpm run brief:front & pnpm --filter @academiaplaton/frontend dev",
+    "dev:backend": "pnpm run brief:back & pnpm --filter @academiaplaton/backend dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",

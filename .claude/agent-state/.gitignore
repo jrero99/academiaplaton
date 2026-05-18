@@ -1,0 +1,4 @@
+# Estado local de los briefings automáticos para los agentes.
+# Cada máquina/desarrollador tiene su propia ventana temporal.
+last-briefed-*.txt
+briefing-*.md
