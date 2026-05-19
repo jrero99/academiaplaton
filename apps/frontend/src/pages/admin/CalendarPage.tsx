@@ -7,24 +7,37 @@ import { MOCK_GROUPS } from '@/features/groups/data/mock-groups';
 import { MOCK_TEACHERS } from '@/features/teachers/data/mock-teachers';
 import { MOCK_SESSIONS } from '@/features/sessions/data/mock-sessions';
 import { WeekCalendar } from '@/features/sessions/components/WeekCalendar';
+import { MonthCalendar } from '@/features/sessions/components/MonthCalendar';
+import { YearCalendar } from '@/features/sessions/components/YearCalendar';
 import {
   SessionSheet,
   type SessionFormValues,
 } from '@/features/sessions/components/SessionSheet';
 import {
   addDays,
+  addMonths,
+  addYears,
+  formatMonthLabel,
   formatWeekRange,
+  formatYearLabel,
   getMondayOf,
+  getMonthGridRowCount,
+  getMonthGridStart,
   minutesToTime,
   timeToMinutes,
   toIsoDate,
 } from '@/features/sessions/lib/week';
+import { cn } from '@/lib/utils';
 
 // MVP: una sola sede mientras no haya endpoint de centros wired.
 // Cuando se conecte el backend, este array vendrá de useCenters().
 const CENTERS = [
   { id: '00000000-0000-0000-0000-0000000000c1', name: 'Plató — Sabadell' },
 ];
+
+const WEEK_DAYS = 6; // Lun–Sáb
+
+type ViewMode = 'week' | 'month' | 'year';
 
 type SheetState =
   | { open: false }
@@ -49,37 +62,72 @@ function detectConflict(
 
 export function CalendarPage() {
   const [centerId, setCenterId] = useState<string>(CENTERS[0]!.id);
-  const [weekStart, setWeekStart] = useState<Date>(() => getMondayOf(new Date()));
+  const [viewMode, setViewMode] = useState<ViewMode>('week');
+  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [sessions, setSessions] = useState<SessionDto[]>(MOCK_SESSIONS);
   const [sheet, setSheet] = useState<SheetState>({ open: false });
   const [error, setError] = useState<string | null>(null);
 
-  const weekDays = 6; // L-S
-  const weekEndExclusive = addDays(weekStart, weekDays);
-  const weekStartIso = toIsoDate(weekStart);
-  const weekEndIso = toIsoDate(weekEndExclusive);
+  // Posiciones derivadas según el modo
+  const weekStart = useMemo(() => getMondayOf(currentDate), [currentDate]);
+  const monthGridStart = useMemo(() => getMonthGridStart(currentDate), [currentDate]);
+  const monthRowCount = useMemo(() => getMonthGridRowCount(currentDate), [currentDate]);
+  const year = currentDate.getFullYear();
 
   const centerGroups = useMemo(
     () => MOCK_GROUPS.filter((g) => g.centerId === centerId),
     [centerId],
   );
 
-  const visibleSessions = useMemo(
-    () =>
-      sessions.filter(
-        (s) => s.centerId === centerId && s.date >= weekStartIso && s.date < weekEndIso,
-      ),
-    [sessions, centerId, weekStartIso, weekEndIso],
-  );
+  // Sesiones visibles según el modo y el centro
+  const visibleSessions = useMemo(() => {
+    if (viewMode === 'week') {
+      const startIso = toIsoDate(weekStart);
+      const endIso = toIsoDate(addDays(weekStart, WEEK_DAYS));
+      return sessions.filter(
+        (s) => s.centerId === centerId && s.date >= startIso && s.date < endIso,
+      );
+    }
+    if (viewMode === 'month') {
+      const startIso = toIsoDate(monthGridStart);
+      const endIso = toIsoDate(addDays(monthGridStart, monthRowCount * 7));
+      return sessions.filter(
+        (s) => s.centerId === centerId && s.date >= startIso && s.date < endIso,
+      );
+    }
+    // year
+    const startIso = toIsoDate(new Date(year, 0, 1));
+    const endIso = toIsoDate(new Date(year + 1, 0, 1));
+    return sessions.filter(
+      (s) => s.centerId === centerId && s.date >= startIso && s.date < endIso,
+    );
+  }, [sessions, centerId, viewMode, weekStart, monthGridStart, monthRowCount, year]);
 
+  // Navegación dependiente del modo
   function goPrev() {
-    setWeekStart((w) => addDays(w, -7));
+    setCurrentDate((d) =>
+      viewMode === 'week' ? addDays(d, -7) : viewMode === 'month' ? addMonths(d, -1) : addYears(d, -1),
+    );
   }
   function goNext() {
-    setWeekStart((w) => addDays(w, 7));
+    setCurrentDate((d) =>
+      viewMode === 'week' ? addDays(d, 7) : viewMode === 'month' ? addMonths(d, 1) : addYears(d, 1),
+    );
   }
   function goToday() {
-    setWeekStart(getMondayOf(new Date()));
+    setCurrentDate(new Date());
+  }
+
+  // Click en un día desde month/year → cambia a week con esa fecha
+  function handleDayClick(date: Date) {
+    setCurrentDate(date);
+    setViewMode('week');
+  }
+
+  // Click en el título de un mini-mes en year → cambia a month
+  function handleMonthClick(monthDate: Date) {
+    setCurrentDate(monthDate);
+    setViewMode('month');
   }
 
   function openCreate(date: string, startTime: string) {
@@ -162,8 +210,6 @@ export function CalendarPage() {
     setSheet({ open: false });
   }
 
-  // Mover una sesión a otra fecha/hora preservando su duración. Aplica conflict
-  // check con la misma lógica que el alta manual.
   function handleSessionDrop(args: { sessionId: string; date: string; startTime: string }) {
     const current = sessions.find((s) => s.id === args.sessionId);
     if (!current) return;
@@ -172,10 +218,8 @@ export function CalendarPage() {
     const newStartMin = timeToMinutes(args.startTime);
     const newEndMin = newStartMin + durationMin;
 
-    // Si la sesión no cambia (mismo día y misma hora), no hacemos nada
     if (current.date === args.date && current.startTime === args.startTime) return;
 
-    // Si se saldría del rango visible (22:00), avisamos y abortamos
     if (newEndMin > 22 * 60) {
       setError(
         `No se puede mover: la sesión terminaría a las ${minutesToTime(newEndMin)}, fuera del rango del calendario.`,
@@ -214,6 +258,19 @@ export function CalendarPage() {
     );
   }
 
+  // Etiqueta del navegador según el modo
+  const navLabel =
+    viewMode === 'week'
+      ? formatWeekRange(weekStart, WEEK_DAYS)
+      : viewMode === 'month'
+        ? formatMonthLabel(currentDate)
+        : formatYearLabel(currentDate);
+
+  const prevAriaLabel =
+    viewMode === 'week' ? 'Semana anterior' : viewMode === 'month' ? 'Mes anterior' : 'Año anterior';
+  const nextAriaLabel =
+    viewMode === 'week' ? 'Semana siguiente' : viewMode === 'month' ? 'Mes siguiente' : 'Año siguiente';
+
   return (
     <>
       <PageHeader
@@ -221,7 +278,6 @@ export function CalendarPage() {
         breadcrumbs={[{ label: 'Admin', to: '/admin' }, { label: 'Calendario' }]}
       />
 
-      {/* Barra superior: centro + navegación semanal */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
         <div className="flex items-center gap-2">
           <label htmlFor="calendar-center" className="text-sm font-medium text-muted-foreground">
@@ -241,28 +297,53 @@ export function CalendarPage() {
           </select>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={goPrev} aria-label="Semana anterior">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Selector de vista */}
+          <div
+            role="group"
+            aria-label="Modo de vista"
+            className="inline-flex items-center rounded-md border border-input bg-background p-0.5 shadow-sm"
+          >
+            {(['week', 'month', 'year'] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setViewMode(m)}
+                aria-pressed={viewMode === m}
+                className={cn(
+                  'px-3 py-1 text-xs font-medium rounded transition-colors',
+                  viewMode === m
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {m === 'week' ? 'Semana' : m === 'month' ? 'Mes' : 'Año'}
+              </button>
+            ))}
+          </div>
+
+          {/* Navegación */}
+          <Button variant="outline" size="icon" onClick={goPrev} aria-label={prevAriaLabel}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="outline" onClick={goToday}>
             Hoy
           </Button>
-          <Button variant="outline" size="icon" onClick={goNext} aria-label="Semana siguiente">
+          <Button variant="outline" size="icon" onClick={goNext} aria-label={nextAriaLabel}>
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <span className="ml-2 text-sm font-medium tabular-nums">
-            {formatWeekRange(weekStart, weekDays)}
-          </span>
+          <span className="ml-2 text-sm font-medium tabular-nums">{navLabel}</span>
         </div>
 
-        <Button
-          onClick={() => openCreate(toIsoDate(weekStart), '18:00')}
-          aria-label="Nueva sesión"
-        >
-          <Plus className="h-4 w-4" />
-          Nueva sesión
-        </Button>
+        {viewMode === 'week' && (
+          <Button
+            onClick={() => openCreate(toIsoDate(weekStart), '18:00')}
+            aria-label="Nueva sesión"
+          >
+            <Plus className="h-4 w-4" />
+            Nueva sesión
+          </Button>
+        )}
       </div>
 
       {error && (
@@ -274,21 +355,53 @@ export function CalendarPage() {
         </div>
       )}
 
-      <WeekCalendar
-        weekStart={weekStart}
-        sessions={visibleSessions}
-        groups={centerGroups}
-        teachers={MOCK_TEACHERS}
-        dayCount={weekDays}
-        onCellClick={({ date, startTime }) => openCreate(date, startTime)}
-        onSessionClick={openEdit}
-        onSessionDrop={handleSessionDrop}
-      />
+      {viewMode === 'week' && (
+        <>
+          <WeekCalendar
+            weekStart={weekStart}
+            sessions={visibleSessions}
+            groups={centerGroups}
+            teachers={MOCK_TEACHERS}
+            dayCount={WEEK_DAYS}
+            onCellClick={({ date, startTime }) => openCreate(date, startTime)}
+            onSessionClick={openEdit}
+            onSessionDrop={handleSessionDrop}
+          />
+          <p className="mt-3 text-xs text-muted-foreground">
+            Click en una celda vacía para crear una sesión. Click en un bloque para editarla o eliminarla.
+            Arrastra un bloque a otro slot para moverlo (snap a 15 min).
+          </p>
+        </>
+      )}
 
-      <p className="mt-3 text-xs text-muted-foreground">
-        Click en una celda vacía para crear una sesión. Click en un bloque para editarla o eliminarla.
-        Arrastra un bloque a otro slot para moverlo (snap a 15 min).
-      </p>
+      {viewMode === 'month' && (
+        <>
+          <MonthCalendar
+            monthDate={currentDate}
+            sessions={visibleSessions}
+            groups={centerGroups}
+            onDayClick={handleDayClick}
+          />
+          <p className="mt-3 text-xs text-muted-foreground">
+            Click en cualquier día para ir a la vista semanal correspondiente.
+          </p>
+        </>
+      )}
+
+      {viewMode === 'year' && (
+        <>
+          <YearCalendar
+            year={year}
+            sessions={visibleSessions}
+            onDayClick={handleDayClick}
+            onMonthClick={handleMonthClick}
+          />
+          <p className="mt-3 text-xs text-muted-foreground">
+            Intensidad por día = número de sesiones. Click en el título de un mes para abrirlo;
+            click en un día para ir a su semana.
+          </p>
+        </>
+      )}
 
       <SessionSheet
         open={sheet.open}

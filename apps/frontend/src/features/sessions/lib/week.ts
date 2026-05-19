@@ -69,6 +69,56 @@ export function isSameIsoDate(a: Date, b: Date): boolean {
   return toIsoDate(a) === toIsoDate(b);
 }
 
+// Suma `n` meses preservando el día si es posible (clamp si el mes destino
+// tiene menos días, p.ej. 31 ene + 1 mes → 28/29 feb).
+export function addMonths(date: Date, n: number): Date {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const targetDay = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + n);
+  const lastDayOfTarget = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(targetDay, lastDayOfTarget));
+  return d;
+}
+
+export function addYears(date: Date, n: number): Date {
+  return addMonths(date, n * 12);
+}
+
+// Primer día del mes que contiene `date`
+export function startOfMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+// Lunes de la primera fila del grid de mes (puede ser del mes anterior)
+export function getMonthGridStart(date: Date): Date {
+  return getMondayOf(startOfMonth(date));
+}
+
+// Número de filas (semanas) que necesita el grid para cubrir el mes
+export function getMonthGridRowCount(date: Date): number {
+  const first = startOfMonth(date);
+  const lastDay = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  const gridStart = getMonthGridStart(date);
+  const last = new Date(first.getFullYear(), first.getMonth(), lastDay);
+  const diffDays = Math.round((last.getTime() - gridStart.getTime()) / (24 * 60 * 60 * 1000));
+  return Math.ceil((diffDays + 1) / 7);
+}
+
+export function formatMonthLabel(date: Date): string {
+  const m = MONTH_LABELS_ES[date.getMonth()]!;
+  return `${m.charAt(0).toUpperCase()}${m.slice(1)} ${date.getFullYear()}`;
+}
+
+export function formatYearLabel(date: Date): string {
+  return String(date.getFullYear());
+}
+
+export function monthShortLabel(monthIndex: number): string {
+  // Nombre corto del mes en español (3 letras, primera mayúscula)
+  return MONTH_LABELS_ES[monthIndex]!.slice(0, 3).replace(/^./, (c) => c.toUpperCase());
+}
+
 // Color estable derivado del id del profesor (HSL pastel)
 export function teacherColor(teacherId: string): { bg: string; border: string; text: string } {
   let hash = 0;
