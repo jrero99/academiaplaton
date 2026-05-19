@@ -1,0 +1,179 @@
+import { useMemo, useState } from 'react';
+import { Plus, Search, Pencil, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { PageHeader } from '@/components/admin/PageHeader';
+import { MOCK_TEACHERS } from '@/features/teachers/data/mock-teachers';
+import { TeacherSheet } from '@/features/teachers/components/TeacherSheet';
+import type { Teacher } from '@/features/teachers/types';
+
+const dateFmt = new Intl.DateTimeFormat('es-ES', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+});
+
+const ORG_ID = '00000000-0000-0000-0000-000000000001';
+
+type SheetState =
+  | { open: false }
+  | { open: true; mode: 'create' }
+  | { open: true; mode: 'edit'; teacher: Teacher };
+
+export function TeachersListPage() {
+  const [teachers, setTeachers] = useState<Teacher[]>(MOCK_TEACHERS);
+  const [search, setSearch] = useState('');
+  const [sheet, setSheet] = useState<SheetState>({ open: false });
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return teachers;
+    return teachers.filter((t) =>
+      [t.firstName, t.lastName, t.email]
+        .filter(Boolean)
+        .some((v) => v!.toLowerCase().includes(q)),
+    );
+  }, [search, teachers]);
+
+  function openCreate() {
+    setSheet({ open: true, mode: 'create' });
+  }
+
+  function openEdit(teacher: Teacher) {
+    setSheet({ open: true, mode: 'edit', teacher });
+  }
+
+  function closeSheet() {
+    setSheet({ open: false });
+  }
+
+  function handleSheetSubmit(data: Omit<Teacher, 'id' | 'organizationId' | 'createdAt'>) {
+    if (!sheet.open) return;
+
+    if (sheet.mode === 'create') {
+      const newTeacher: Teacher = {
+        id: crypto.randomUUID(),
+        organizationId: ORG_ID,
+        createdAt: new Date().toISOString(),
+        ...data,
+      };
+      setTeachers((prev) => [newTeacher, ...prev]);
+    } else {
+      setTeachers((prev) =>
+        prev.map((t) => (t.id === sheet.teacher.id ? { ...t, ...data } : t)),
+      );
+    }
+  }
+
+  function handleDelete(id: string) {
+    setTeachers((prev) => prev.filter((t) => t.id !== id));
+  }
+
+  return (
+    <>
+      <PageHeader
+        title="Profesores"
+        breadcrumbs={[{ label: 'Admin', to: '/admin' }, { label: 'Profesores' }]}
+      />
+
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
+        <Button onClick={openCreate}>
+          <Plus className="h-4 w-4" />
+          Nuevo profesor
+        </Button>
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar..."
+            className="pl-9"
+            aria-label="Buscar profesores"
+          />
+        </div>
+      </div>
+
+      <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead className="w-12 text-muted-foreground">#</TableHead>
+              <TableHead>Nombre completo</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Teléfono</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead>Alta</TableHead>
+              <TableHead className="w-32 text-right">Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  No hay profesores que coincidan con la búsqueda.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filtered.map((t, idx) => (
+                <TableRow key={t.id} className="hover:bg-muted/30">
+                  <TableCell className="font-medium text-muted-foreground">{idx + 1}</TableCell>
+                  <TableCell className="font-medium">
+                    {t.firstName} {t.lastName}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{t.email}</TableCell>
+                  <TableCell className="text-muted-foreground">{t.phone ?? '—'}</TableCell>
+                  <TableCell>
+                    <Badge variant={t.active ? 'default' : 'secondary'}>
+                      {t.active ? 'Activo' : 'Inactivo'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {dateFmt.format(new Date(t.createdAt))}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Editar a ${t.firstName} ${t.lastName}`}
+                        onClick={() => openEdit(t)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Borrar a ${t.firstName} ${t.lastName}`}
+                        className="hover:text-destructive"
+                        onClick={() => handleDelete(t.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <TeacherSheet
+        open={sheet.open}
+        onOpenChange={(open) => { if (!open) closeSheet(); }}
+        mode={sheet.open ? sheet.mode : 'create'}
+        teacher={sheet.open && sheet.mode === 'edit' ? sheet.teacher : undefined}
+        onSubmit={handleSheetSubmit}
+      />
+    </>
+  );
+}

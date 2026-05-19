@@ -1,0 +1,64 @@
+import type { Teacher } from '../types';
+
+const ORG_ID = '00000000-0000-0000-0000-000000000001';
+
+export const MOCK_TEACHERS: Teacher[] = [
+  {
+    id: '33333333-3333-3333-3333-333333333301',
+    organizationId: ORG_ID,
+    firstName: 'Montserrat',
+    lastName: 'Ferrer Bosch',
+    email: 'montserrat.ferrer@platoacademia.com',
+    phone: '+34 612 100 201',
+    active: true,
+    createdAt: '2025-09-01T08:00:00.000Z',
+  },
+  {
+    id: '33333333-3333-3333-3333-333333333302',
+    organizationId: ORG_ID,
+    firstName: 'Jordi',
+    lastName: 'Sala Puig',
+    email: 'jordi.sala@platoacademia.com',
+    phone: '+34 633 200 302',
+    active: true,
+    createdAt: '2025-09-01T08:15:00.000Z',
+  },
+  {
+    id: '33333333-3333-3333-3333-333333333303',
+    organizationId: ORG_ID,
+    firstName: 'Núria',
+    lastName: 'Codina Mir',
+    email: 'nuria.codina@platoacademia.com',
+    active: true,
+    createdAt: '2025-10-10T09:30:00.000Z',
+  },
+  {
+    id: '33333333-3333-3333-3333-333333333304',
+    organizationId: ORG_ID,
+    firstName: 'Raül',
+    lastName: 'Martínez Gómez',
+    email: 'raul.martinez@platoacademia.com',
+    phone: '+34 655 400 404',
+    active: false,
+    createdAt: '2025-11-20T11:00:00.000Z',
+  },
+  {
+    id: '33333333-3333-3333-3333-333333333305',
+    organizationId: ORG_ID,
+    firstName: 'Laia',
+    lastName: 'Domingo Coll',
+    email: 'laia.domingo@platoacademia.com',
+    phone: '+34 678 500 505',
+    active: true,
+    createdAt: '2026-01-07T10:00:00.000Z',
+  },
+  {
+    id: '33333333-3333-3333-3333-333333333306',
+    organizationId: ORG_ID,
+    firstName: 'Andreu',
+    lastName: 'Pons Esteve',
+    email: 'andreu.pons@platoacademia.com',
+    active: false,
+    createdAt: '2026-03-15T09:00:00.000Z',
+  },
+];

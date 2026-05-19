@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   UserPlus,
   GraduationCap,
+  UserCog,
   BarChart3,
   MessageSquare,
   Settings,
@@ -21,6 +22,7 @@ const MAIN_ITEMS: NavItem[] = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/admin/leads', label: 'Leads', icon: UserPlus },
   { to: '/admin/students', label: 'Alumnos', icon: GraduationCap },
+  { to: '/admin/teachers', label: 'Profesores', icon: UserCog },
   { to: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
 ];
 
