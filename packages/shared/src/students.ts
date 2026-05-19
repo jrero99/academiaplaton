@@ -12,6 +12,7 @@ export const GuardianSchema = z.object({
 export type Guardian = z.infer<typeof GuardianSchema>;
 
 export const StudentCreateSchema = z.object({
+  centerId: z.string().uuid(),
   firstName: z.string().min(1).max(80),
   lastName: z.string().min(1).max(120),
   birthDate: z.string().date(),
@@ -38,6 +39,7 @@ export type StudentDto = z.infer<typeof StudentDtoSchema>;
 
 export const StudentFiltersSchema = z.object({
   search: z.string().max(120).optional(),
+  centerId: z.string().uuid().optional(),
   groupId: z.string().uuid().optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),

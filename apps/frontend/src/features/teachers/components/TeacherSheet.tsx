@@ -106,7 +106,6 @@ function TeacherForm({
           </label>
           <Input
             id="teacher-firstName"
-            placeholder="Montserrat"
             aria-invalid={!!errors.firstName}
             {...register('firstName')}
           />
@@ -122,7 +121,6 @@ function TeacherForm({
           </label>
           <Input
             id="teacher-lastName"
-            placeholder="Ferrer Bosch"
             aria-invalid={!!errors.lastName}
             {...register('lastName')}
           />
@@ -139,7 +137,6 @@ function TeacherForm({
           <Input
             id="teacher-email"
             type="email"
-            placeholder="nombre@ejemplo.com"
             aria-invalid={!!errors.email}
             {...register('email')}
           />
@@ -157,7 +154,6 @@ function TeacherForm({
           <Input
             id="teacher-phone"
             type="tel"
-            placeholder="+34 600 000 000"
             aria-invalid={!!errors.phone}
             {...register('phone')}
           />

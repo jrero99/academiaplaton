@@ -96,7 +96,7 @@ export function TeachersListPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar..."
-            className="pl-9"
+            className="pl-9 bg-muted"
             aria-label="Buscar profesores"
           />
         </div>
@@ -105,7 +105,7 @@ export function TeachersListPage() {
       <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/50 hover:bg-muted/50">
+            <TableRow className="bg-muted hover:bg-muted">
               <TableHead className="w-12 text-muted-foreground">#</TableHead>
               <TableHead>Nombre completo</TableHead>
               <TableHead>Email</TableHead>

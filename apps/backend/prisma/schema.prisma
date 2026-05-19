@@ -45,6 +45,37 @@ model Organization {
   memberships UserOrganization[]
   leads       Lead[]
   students    Student[]
+  teachers    Teacher[]
+  centers     Center[]
+  groups      Group[]
+  sessions    Session[]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Centros (sedes) — sub-entidad dentro de Organization
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Center {
+  id             String  @id @default(uuid()) @db.Char(36)
+  organizationId String  @db.Char(36)
+  slug           String  @db.VarChar(80)
+  name           String  @db.VarChar(160)
+  address        String? @db.VarChar(240)
+  phone          String? @db.VarChar(20)
+  email          String? @db.VarChar(160)
+  active         Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  students     Student[]
+  teachers     Teacher[]
+  groups       Group[]
+  sessions     Session[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId, active])
 }
 
 model User {
@@ -128,6 +159,7 @@ model Lead {
 model Student {
   id             String   @id @default(uuid()) @db.Char(36)
   organizationId String   @db.Char(36)
+  centerId       String   @db.Char(36)
   firstName      String   @db.VarChar(80)
   lastName       String   @db.VarChar(120)
   birthDate      DateTime @db.Date
@@ -142,8 +174,40 @@ model Student {
   fromLead   Lead?   @relation(fields: [fromLeadId], references: [id], onDelete: SetNull)
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  center       Center       @relation(fields: [centerId], references: [id], onDelete: Restrict)
   guardians    Guardian[]
+  groups       GroupStudent[]
 
+  @@index([organizationId, centerId])
+  @@index([organizationId, lastName, firstName])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Profesores — entidad de RRHH dentro de un Center
+// (sin vínculo a User por ahora; se añadirá cuando se cierre el módulo auth)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Teacher {
+  id             String  @id @default(uuid()) @db.Char(36)
+  organizationId String  @db.Char(36)
+  centerId       String  @db.Char(36)
+  firstName      String  @db.VarChar(80)
+  lastName       String  @db.VarChar(120)
+  email          String  @db.VarChar(160)
+  phone          String? @db.VarChar(20)
+  active         Boolean @default(true)
+  notes          String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  center       Center       @relation(fields: [centerId], references: [id], onDelete: Restrict)
+  groups       Group[]
+  sessions     Session[]
+
+  @@unique([organizationId, email])
+  @@index([organizationId, centerId])
   @@index([organizationId, lastName, firstName])
 }
 
@@ -159,4 +223,82 @@ model Guardian {
   student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([studentId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Scheduling — Grupos (MVP)
+// Un Group tiene un profesor titular único (teacherId). Las sustituciones
+// puntuales se modelarán en Fase 2 vía Session.teacherId (no en este modelo).
+// Relación N:N con Student a través de GroupStudent.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Group {
+  id             String  @id @default(uuid()) @db.Char(36)
+  organizationId String  @db.Char(36)
+  centerId       String  @db.Char(36)
+  teacherId      String  @db.Char(36)
+  name           String  @db.VarChar(120)
+  subject        String? @db.VarChar(120)
+  description    String? @db.VarChar(240)
+  active         Boolean @default(true)
+  notes          String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  center       Center         @relation(fields: [centerId], references: [id], onDelete: Restrict)
+  teacher      Teacher        @relation(fields: [teacherId], references: [id], onDelete: Restrict)
+  students     GroupStudent[]
+  sessions     Session[]
+
+  @@unique([organizationId, centerId, name])
+  @@index([organizationId, centerId])
+  @@index([organizationId, teacherId])
+  @@index([organizationId, active])
+}
+
+model GroupStudent {
+  id        String   @id @default(uuid()) @db.Char(36)
+  groupId   String   @db.Char(36)
+  studentId String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  group   Group   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, studentId])
+  @@index([studentId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Session — sesión de clase concreta de un Group en una fecha + franja horaria
+// El admin coloca grupos en el calendario semanal por centro de forma manual.
+// teacherId se denormaliza desde Group al crear (default), pero puede
+// sobrescribirse para soportar sustituciones puntuales.
+// Tiempos como strings "HH:mm" para evitar problemas de zona horaria.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Session {
+  id             String   @id @default(uuid()) @db.Char(36)
+  organizationId String   @db.Char(36)
+  centerId       String   @db.Char(36)
+  groupId        String   @db.Char(36)
+  teacherId      String   @db.Char(36)
+  date           DateTime @db.Date
+  startTime      String   @db.VarChar(5)
+  endTime        String   @db.VarChar(5)
+  notes          String?  @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  center       Center       @relation(fields: [centerId], references: [id], onDelete: Restrict)
+  group        Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  teacher      Teacher      @relation(fields: [teacherId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, centerId, date])
+  @@index([organizationId, teacherId, date])
+  @@index([organizationId, groupId, date])
 }

@@ -73,7 +73,7 @@
   --accent-foreground: #691a37;
 
   /* Neutrales para estructura UI (inputs, bordes, texto secundario) */
-  --muted: oklch(0.97 0 0);
+  --muted: oklch(0.94 0 0);
   --muted-foreground: oklch(0.45 0 0);
   --border: oklch(0.92 0 0);
   --input: oklch(0.92 0 0);

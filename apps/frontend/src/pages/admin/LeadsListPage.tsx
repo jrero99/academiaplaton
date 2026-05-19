@@ -51,7 +51,7 @@ export function LeadsListPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar..."
-            className="pl-9"
+            className="pl-9 bg-muted"
           />
         </div>
       </div>
@@ -59,7 +59,7 @@ export function LeadsListPage() {
       <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/50 hover:bg-muted/50">
+            <TableRow className="bg-muted hover:bg-muted">
               <TableHead className="w-12 text-muted-foreground">#</TableHead>
               <TableHead>Nombre completo</TableHead>
               <TableHead>Estado</TableHead>

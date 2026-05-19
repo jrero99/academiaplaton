@@ -1,11 +1,13 @@
 import type { StudentDto } from '@academiaplaton/shared';
 
 const ORG_ID = '00000000-0000-0000-0000-000000000001';
+const CENTER_ID = '00000000-0000-0000-0000-0000000000c1';
 
 export const MOCK_STUDENTS: StudentDto[] = [
   {
     id: '22222222-2222-2222-2222-222222222201',
     organizationId: ORG_ID,
+    centerId: CENTER_ID,
     firstName: 'Ona',
     lastName: 'Pujol Vidal',
     birthDate: '2009-03-12',
@@ -27,6 +29,7 @@ export const MOCK_STUDENTS: StudentDto[] = [
   {
     id: '22222222-2222-2222-2222-222222222202',
     organizationId: ORG_ID,
+    centerId: CENTER_ID,
     firstName: 'Hugo',
     lastName: 'Riera Mas',
     birthDate: '2011-07-04',
@@ -46,6 +49,7 @@ export const MOCK_STUDENTS: StudentDto[] = [
   {
     id: '22222222-2222-2222-2222-222222222203',
     organizationId: ORG_ID,
+    centerId: CENTER_ID,
     firstName: 'Berta',
     lastName: 'Cases Llobet',
     birthDate: '2008-11-25',
@@ -72,6 +76,7 @@ export const MOCK_STUDENTS: StudentDto[] = [
   {
     id: '22222222-2222-2222-2222-222222222204',
     organizationId: ORG_ID,
+    centerId: CENTER_ID,
     firstName: 'Nil',
     lastName: 'Camps Aymar',
     birthDate: '2010-05-18',
@@ -90,6 +95,7 @@ export const MOCK_STUDENTS: StudentDto[] = [
   {
     id: '22222222-2222-2222-2222-222222222205',
     organizationId: ORG_ID,
+    centerId: CENTER_ID,
     firstName: 'Carla',
     lastName: 'Font Roig',
     birthDate: '2007-09-30',

@@ -12,6 +12,11 @@ import {
 } from '@/components/ui/table';
 import { PageHeader } from '@/components/admin/PageHeader';
 import { MOCK_STUDENTS } from '@/features/students/data/mock-students';
+import {
+  StudentSheet,
+  type StudentFormValues,
+} from '@/features/students/components/StudentSheet';
+import type { StudentDto } from '@academiaplaton/shared';
 
 const dateFmt = new Intl.DateTimeFormat('es-ES', {
   day: '2-digit',
@@ -19,18 +24,97 @@ const dateFmt = new Intl.DateTimeFormat('es-ES', {
   year: 'numeric',
 });
 
+const ORG_ID = '00000000-0000-0000-0000-000000000001';
+const CENTER_ID = '00000000-0000-0000-0000-0000000000c1';
+
+type SheetState =
+  | { open: false }
+  | { open: true; mode: 'create' }
+  | { open: true; mode: 'edit'; student: StudentDto };
+
+function toOptional(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  return trimmed.length === 0 ? undefined : trimmed;
+}
+
+function formToStudentFields(data: StudentFormValues) {
+  return {
+    firstName: data.firstName,
+    lastName: data.lastName,
+    birthDate: data.birthDate,
+    email: toOptional(data.email),
+    phone: toOptional(data.phone),
+    address: toOptional(data.address),
+    notes: toOptional(data.notes),
+    guardians: data.guardians.map((g) => ({
+      firstName: g.firstName,
+      lastName: g.lastName,
+      relationship: g.relationship,
+      phone: g.phone,
+      email: toOptional(g.email),
+    })),
+  };
+}
+
 export function StudentsListPage() {
+  const [students, setStudents] = useState<StudentDto[]>(MOCK_STUDENTS);
   const [search, setSearch] = useState('');
+  const [sheet, setSheet] = useState<SheetState>({ open: false });
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return MOCK_STUDENTS;
-    return MOCK_STUDENTS.filter((s) =>
+    if (!q) return students;
+    return students.filter((s) =>
       [s.firstName, s.lastName, s.email]
         .filter(Boolean)
         .some((v) => v!.toLowerCase().includes(q)),
     );
-  }, [search]);
+  }, [search, students]);
+
+  function openCreate() {
+    setSheet({ open: true, mode: 'create' });
+  }
+
+  function openEdit(student: StudentDto) {
+    setSheet({ open: true, mode: 'edit', student });
+  }
+
+  function closeSheet() {
+    setSheet({ open: false });
+  }
+
+  function handleSheetSubmit(data: StudentFormValues) {
+    if (!sheet.open) return;
+
+    const fields = formToStudentFields(data);
+
+    if (sheet.mode === 'create') {
+      const now = new Date().toISOString();
+      const newStudent: StudentDto = {
+        id: crypto.randomUUID(),
+        organizationId: ORG_ID,
+        centerId: CENTER_ID,
+        createdAt: now,
+        updatedAt: now,
+        ...fields,
+      };
+      setStudents((prev) => [newStudent, ...prev]);
+    } else {
+      const id = sheet.student.id;
+      setStudents((prev) =>
+        prev.map((s) =>
+          s.id === id
+            ? { ...s, ...fields, updatedAt: new Date().toISOString() }
+            : s,
+        ),
+      );
+    }
+  }
+
+  function handleDelete(id: string) {
+    setStudents((prev) => prev.filter((s) => s.id !== id));
+  }
 
   return (
     <>
@@ -40,7 +124,7 @@ export function StudentsListPage() {
       />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
-        <Button>
+        <Button onClick={openCreate}>
           <Plus className="h-4 w-4" />
           Nuevo alumno
         </Button>
@@ -50,7 +134,8 @@ export function StudentsListPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar..."
-            className="pl-9"
+            className="pl-9 bg-muted"
+            aria-label="Buscar alumnos"
           />
         </div>
       </div>
@@ -58,7 +143,7 @@ export function StudentsListPage() {
       <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/50 hover:bg-muted/50">
+            <TableRow className="bg-muted hover:bg-muted">
               <TableHead className="w-12 text-muted-foreground">#</TableHead>
               <TableHead>Nombre completo</TableHead>
               <TableHead>Fecha nacimiento</TableHead>
@@ -93,14 +178,20 @@ export function StudentsListPage() {
                       <Button variant="ghost" size="icon" aria-label="Abrir">
                         <ArrowUpRight className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" aria-label="Editar">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Editar a ${s.firstName} ${s.lastName}`}
+                        onClick={() => openEdit(s)}
+                      >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        aria-label="Borrar"
+                        aria-label={`Borrar a ${s.firstName} ${s.lastName}`}
                         className="hover:text-destructive"
+                        onClick={() => handleDelete(s.id)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -112,6 +203,14 @@ export function StudentsListPage() {
           </TableBody>
         </Table>
       </div>
+
+      <StudentSheet
+        open={sheet.open}
+        onOpenChange={(open) => { if (!open) closeSheet(); }}
+        mode={sheet.open ? sheet.mode : 'create'}
+        student={sheet.open && sheet.mode === 'edit' ? sheet.student : undefined}
+        onSubmit={handleSheetSubmit}
+      />
     </>
   );
 }

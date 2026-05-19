@@ -1,24 +1,24 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import {
-  StudentCreateSchema,
-  StudentFiltersSchema,
-  StudentUpdateSchema,
+  SessionCreateSchema,
+  SessionFiltersSchema,
+  SessionUpdateSchema,
 } from '@academiaplaton/shared';
 import { validate } from '../../middleware/validate.js';
 import { requireOrgId } from '../../middleware/tenantContext.js';
-import { studentsService } from './students.service.js';
+import { sessionsService } from './sessions.service.js';
 
 const IdParamSchema = z.object({ id: z.string().uuid() });
 
-export const studentsRouter = Router();
+export const sessionsRouter = Router();
 
-studentsRouter.get(
+sessionsRouter.get(
   '/',
-  validate(StudentFiltersSchema, 'query'),
+  validate(SessionFiltersSchema, 'query'),
   async (req, res, next) => {
     try {
-      const result = await studentsService.list(requireOrgId(req), req.query as never);
+      const result = await sessionsService.list(requireOrgId(req), req.query as never);
       res.json(result);
     } catch (err) {
       next(err);
@@ -26,25 +26,25 @@ studentsRouter.get(
   },
 );
 
-studentsRouter.get(
+sessionsRouter.get(
   '/:id',
   validate(IdParamSchema, 'params'),
   async (req, res, next) => {
     try {
-      const student = await studentsService.getById(requireOrgId(req), req.params.id!);
-      res.json(student);
+      const session = await sessionsService.getById(requireOrgId(req), req.params.id!);
+      res.json(session);
     } catch (err) {
       next(err);
     }
   },
 );
 
-studentsRouter.post(
+sessionsRouter.post(
   '/',
-  validate(StudentCreateSchema, 'body'),
+  validate(SessionCreateSchema, 'body'),
   async (req, res, next) => {
     try {
-      const created = await studentsService.create(requireOrgId(req), req.body);
+      const created = await sessionsService.create(requireOrgId(req), req.body);
       res.status(201).json(created);
     } catch (err) {
       next(err);
@@ -52,13 +52,17 @@ studentsRouter.post(
   },
 );
 
-studentsRouter.patch(
+sessionsRouter.patch(
   '/:id',
   validate(IdParamSchema, 'params'),
-  validate(StudentUpdateSchema, 'body'),
+  validate(SessionUpdateSchema, 'body'),
   async (req, res, next) => {
     try {
-      const updated = await studentsService.update(requireOrgId(req), req.params.id!, req.body);
+      const updated = await sessionsService.update(
+        requireOrgId(req),
+        req.params.id!,
+        req.body,
+      );
       res.json(updated);
     } catch (err) {
       next(err);
@@ -66,12 +70,12 @@ studentsRouter.patch(
   },
 );
 
-studentsRouter.delete(
+sessionsRouter.delete(
   '/:id',
   validate(IdParamSchema, 'params'),
   async (req, res, next) => {
     try {
-      await studentsService.delete(requireOrgId(req), req.params.id!);
+      await sessionsService.delete(requireOrgId(req), req.params.id!);
       res.status(204).send();
     } catch (err) {
       next(err);

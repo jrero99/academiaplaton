@@ -4,6 +4,8 @@ import {
   UserPlus,
   GraduationCap,
   UserCog,
+  Users,
+  CalendarDays,
   BarChart3,
   MessageSquare,
   Settings,
@@ -23,6 +25,8 @@ const MAIN_ITEMS: NavItem[] = [
   { to: '/admin/leads', label: 'Leads', icon: UserPlus },
   { to: '/admin/students', label: 'Alumnos', icon: GraduationCap },
   { to: '/admin/teachers', label: 'Profesores', icon: UserCog },
+  { to: '/admin/groups', label: 'Grupos', icon: Users },
+  { to: '/admin/calendar', label: 'Calendario', icon: CalendarDays },
   { to: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
 ];
 

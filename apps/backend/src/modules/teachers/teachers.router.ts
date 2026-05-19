@@ -1,24 +1,24 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import {
-  StudentCreateSchema,
-  StudentFiltersSchema,
-  StudentUpdateSchema,
+  TeacherCreateSchema,
+  TeacherFiltersSchema,
+  TeacherUpdateSchema,
 } from '@academiaplaton/shared';
 import { validate } from '../../middleware/validate.js';
 import { requireOrgId } from '../../middleware/tenantContext.js';
-import { studentsService } from './students.service.js';
+import { teachersService } from './teachers.service.js';
 
 const IdParamSchema = z.object({ id: z.string().uuid() });
 
-export const studentsRouter = Router();
+export const teachersRouter = Router();
 
-studentsRouter.get(
+teachersRouter.get(
   '/',
-  validate(StudentFiltersSchema, 'query'),
+  validate(TeacherFiltersSchema, 'query'),
   async (req, res, next) => {
     try {
-      const result = await studentsService.list(requireOrgId(req), req.query as never);
+      const result = await teachersService.list(requireOrgId(req), req.query as never);
       res.json(result);
     } catch (err) {
       next(err);
@@ -26,25 +26,25 @@ studentsRouter.get(
   },
 );
 
-studentsRouter.get(
+teachersRouter.get(
   '/:id',
   validate(IdParamSchema, 'params'),
   async (req, res, next) => {
     try {
-      const student = await studentsService.getById(requireOrgId(req), req.params.id!);
-      res.json(student);
+      const teacher = await teachersService.getById(requireOrgId(req), req.params.id!);
+      res.json(teacher);
     } catch (err) {
       next(err);
     }
   },
 );
 
-studentsRouter.post(
+teachersRouter.post(
   '/',
-  validate(StudentCreateSchema, 'body'),
+  validate(TeacherCreateSchema, 'body'),
   async (req, res, next) => {
     try {
-      const created = await studentsService.create(requireOrgId(req), req.body);
+      const created = await teachersService.create(requireOrgId(req), req.body);
       res.status(201).json(created);
     } catch (err) {
       next(err);
@@ -52,13 +52,13 @@ studentsRouter.post(
   },
 );
 
-studentsRouter.patch(
+teachersRouter.patch(
   '/:id',
   validate(IdParamSchema, 'params'),
-  validate(StudentUpdateSchema, 'body'),
+  validate(TeacherUpdateSchema, 'body'),
   async (req, res, next) => {
     try {
-      const updated = await studentsService.update(requireOrgId(req), req.params.id!, req.body);
+      const updated = await teachersService.update(requireOrgId(req), req.params.id!, req.body);
       res.json(updated);
     } catch (err) {
       next(err);
@@ -66,12 +66,12 @@ studentsRouter.patch(
   },
 );
 
-studentsRouter.delete(
+teachersRouter.delete(
   '/:id',
   validate(IdParamSchema, 'params'),
   async (req, res, next) => {
     try {
-      await studentsService.delete(requireOrgId(req), req.params.id!);
+      await teachersService.delete(requireOrgId(req), req.params.id!);
       res.status(204).send();
     } catch (err) {
       next(err);
