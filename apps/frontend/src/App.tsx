@@ -6,6 +6,8 @@ import { StudentsListPage } from '@/pages/admin/StudentsListPage';
 import { TeachersListPage } from '@/pages/admin/TeachersListPage';
 import { GroupsListPage } from '@/pages/admin/GroupsListPage';
 import { CalendarPage } from '@/pages/admin/CalendarPage';
+import { CentersListPage } from '@/pages/admin/CentersListPage';
+import { InvoicesListPage } from '@/pages/admin/InvoicesListPage';
 import { StubPage } from '@/pages/admin/StubPage';
 import { WelcomePage } from '@/pages/WelcomePage';
 
@@ -21,6 +23,8 @@ function App() {
           <Route path="teachers" element={<TeachersListPage />} />
           <Route path="groups" element={<GroupsListPage />} />
           <Route path="calendar" element={<CalendarPage />} />
+          <Route path="centers" element={<CentersListPage />} />
+          <Route path="invoices" element={<InvoicesListPage />} />
           <Route path="analytics" element={<StubPage title="Analytics" />} />
           <Route path="messages" element={<StubPage title="Mensajes" />} />
           <Route path="settings" element={<StubPage title="Ajustes" />} />

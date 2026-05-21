@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import type { StudentDto } from '@academiaplaton/shared';
+import type { CenterDto, StudentDto } from '@academiaplaton/shared';
 
 // ------------------------------------------------------------------ schema
 const phoneOptionalRegex = /^[+\d\s\-().]{0,20}$/;
@@ -35,6 +35,7 @@ const guardianSchema = z.object({
 const studentSchema = z.object({
   firstName: z.string().min(1, 'El nombre es obligatorio').max(80),
   lastName: z.string().min(1, 'Los apellidos son obligatorios').max(120),
+  centerId: z.string().uuid('Selecciona una academia'),
   birthDate: z.string().min(1, 'La fecha de nacimiento es obligatoria'),
   email: z
     .string()
@@ -49,6 +50,11 @@ const studentSchema = z.object({
     .optional(),
   address: z.string().max(240).or(z.literal('')).optional(),
   notes: z.string().max(2000).or(z.literal('')).optional(),
+  monthlyFee: z
+    .number({ invalid_type_error: 'Introduce un importe válido' })
+    .nonnegative('Debe ser >= 0')
+    .max(99999, 'Importe demasiado alto')
+    .optional(),
   guardians: z.array(guardianSchema).max(4, 'Máximo 4 tutores'),
 });
 
@@ -73,6 +79,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   mode: 'create' | 'edit';
   student?: StudentDto;
+  centers: CenterDto[];
   onSubmit: (data: StudentFormValues) => void;
 }
 
@@ -80,11 +87,13 @@ interface Props {
 function StudentForm({
   mode,
   student,
+  centers,
   onSubmit,
   onCancel,
 }: {
   mode: 'create' | 'edit';
   student?: StudentDto;
+  centers: CenterDto[];
   onSubmit: (data: StudentFormValues) => void;
   onCancel: () => void;
 }) {
@@ -100,11 +109,13 @@ function StudentForm({
         ? {
             firstName: student.firstName,
             lastName: student.lastName,
+            centerId: student.centerId,
             birthDate: student.birthDate,
             email: student.email ?? '',
             phone: student.phone ?? '',
             address: student.address ?? '',
             notes: student.notes ?? '',
+            monthlyFee: student.monthlyFee,
             guardians: student.guardians.map((g) => ({
               firstName: g.firstName,
               lastName: g.lastName,
@@ -116,11 +127,13 @@ function StudentForm({
         : {
             firstName: '',
             lastName: '',
+            centerId: '',
             birthDate: '',
             email: '',
             phone: '',
             address: '',
             notes: '',
+            monthlyFee: undefined,
             guardians: [],
           },
   });
@@ -196,6 +209,32 @@ function StudentForm({
           )}
         </div>
 
+        {/* Academia (1:1 alumno ↔ academia) */}
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="student-center" className="text-sm font-medium">
+            Academia <span aria-hidden="true" className="text-destructive">*</span>
+          </label>
+          <select
+            id="student-center"
+            aria-invalid={!!errors.centerId}
+            className={selectClassName}
+            {...register('centerId')}
+          >
+            <option value="">— Selecciona una academia —</option>
+            {centers
+              .filter((c) => c.active || (student && c.id === student.centerId))
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                  {!c.active ? ' (inactiva)' : ''}
+                </option>
+              ))}
+          </select>
+          {errors.centerId && (
+            <p role="alert" className="text-xs text-destructive">{errors.centerId.message}</p>
+          )}
+        </div>
+
         {/* Email */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="student-email" className="text-sm font-medium">
@@ -240,6 +279,32 @@ function StudentForm({
           />
           {errors.address && (
             <p role="alert" className="text-xs text-destructive">{errors.address.message}</p>
+          )}
+        </div>
+
+        {/* Cuota mensual */}
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="student-monthlyFee" className="text-sm font-medium">
+            Cuota mensual <span className="text-muted-foreground text-xs">(€ / mes, opcional)</span>
+          </label>
+          <Input
+            id="student-monthlyFee"
+            type="number"
+            inputMode="decimal"
+            step="0.01"
+            min="0"
+            placeholder="0,00"
+            aria-invalid={!!errors.monthlyFee}
+            {...register('monthlyFee', {
+              setValueAs: (v) => {
+                if (v === '' || v === null || v === undefined) return undefined;
+                const n = typeof v === 'number' ? v : Number(v);
+                return Number.isNaN(n) ? undefined : n;
+              },
+            })}
+          />
+          {errors.monthlyFee && (
+            <p role="alert" className="text-xs text-destructive">{errors.monthlyFee.message}</p>
           )}
         </div>
 
@@ -396,7 +461,7 @@ function StudentForm({
 }
 
 // ------------------------------------------------------------------ shell
-export function StudentSheet({ open, onOpenChange, mode, student, onSubmit }: Props) {
+export function StudentSheet({ open, onOpenChange, mode, student, centers, onSubmit }: Props) {
   function handleSubmit(data: StudentFormValues) {
     onSubmit(data);
     onOpenChange(false);
@@ -422,6 +487,7 @@ export function StudentSheet({ open, onOpenChange, mode, student, onSubmit }: Pr
           key={formKey}
           mode={mode}
           student={student}
+          centers={centers}
           onSubmit={handleSubmit}
           onCancel={() => onOpenChange(false)}
         />

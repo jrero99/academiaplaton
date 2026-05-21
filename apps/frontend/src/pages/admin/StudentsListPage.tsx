@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Plus, Search, ArrowUpRight, Pencil, Trash2 } from 'lucide-react';
+import { Plus, ArrowUpRight, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -11,7 +10,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { PageHeader } from '@/components/admin/PageHeader';
+import {
+  FilterBar,
+  FilterField,
+  filterInputClass,
+  filterSelectClass,
+} from '@/components/admin/FilterBar';
 import { MOCK_STUDENTS } from '@/features/students/data/mock-students';
+import { MOCK_CENTERS } from '@/features/centers/data/mock-centers';
 import {
   StudentSheet,
   type StudentFormValues,
@@ -25,7 +31,6 @@ const dateFmt = new Intl.DateTimeFormat('es-ES', {
 });
 
 const ORG_ID = '00000000-0000-0000-0000-000000000001';
-const CENTER_ID = '00000000-0000-0000-0000-0000000000c1';
 
 type SheetState =
   | { open: false }
@@ -42,11 +47,13 @@ function formToStudentFields(data: StudentFormValues) {
   return {
     firstName: data.firstName,
     lastName: data.lastName,
+    centerId: data.centerId,
     birthDate: data.birthDate,
     email: toOptional(data.email),
     phone: toOptional(data.phone),
     address: toOptional(data.address),
     notes: toOptional(data.notes),
+    monthlyFee: data.monthlyFee,
     guardians: data.guardians.map((g) => ({
       firstName: g.firstName,
       lastName: g.lastName,
@@ -57,20 +64,72 @@ function formToStudentFields(data: StudentFormValues) {
   };
 }
 
+const eurFmt = new Intl.NumberFormat('es-ES', {
+  style: 'currency',
+  currency: 'EUR',
+});
+
+type FeeFilter = 'any' | 'none' | 'has';
+
+const initialFilters = {
+  search: '',
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  centerId: '',
+  fee: 'any' as FeeFilter,
+};
+
+function includesCi(haystack: string | null | undefined, needle: string): boolean {
+  if (!needle) return true;
+  return (haystack ?? '').toLowerCase().includes(needle.toLowerCase());
+}
+
 export function StudentsListPage() {
   const [students, setStudents] = useState<StudentDto[]>(MOCK_STUDENTS);
-  const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState(initialFilters);
   const [sheet, setSheet] = useState<SheetState>({ open: false });
 
+  const centerById = useMemo(
+    () => new Map(MOCK_CENTERS.map((c) => [c.id, c])),
+    [],
+  );
+
+  const hasActiveFilters =
+    filters.search !== '' ||
+    filters.firstName !== '' ||
+    filters.lastName !== '' ||
+    filters.email !== '' ||
+    filters.phone !== '' ||
+    filters.centerId !== '' ||
+    filters.fee !== 'any';
+
+  function clearFilters() {
+    setFilters(initialFilters);
+  }
+
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return students;
-    return students.filter((s) =>
-      [s.firstName, s.lastName, s.email]
-        .filter(Boolean)
-        .some((v) => v!.toLowerCase().includes(q)),
-    );
-  }, [search, students]);
+    const q = filters.search.trim().toLowerCase();
+    return students.filter((s) => {
+      if (filters.centerId && s.centerId !== filters.centerId) return false;
+      if (filters.fee === 'none' && s.monthlyFee != null) return false;
+      if (filters.fee === 'has' && s.monthlyFee == null) return false;
+
+      if (!includesCi(s.firstName, filters.firstName)) return false;
+      if (!includesCi(s.lastName, filters.lastName)) return false;
+      if (!includesCi(s.email, filters.email)) return false;
+      if (!includesCi(s.phone, filters.phone)) return false;
+
+      if (q) {
+        const center = centerById.get(s.centerId);
+        const hit = [s.firstName, s.lastName, s.email ?? '', s.phone ?? '', center?.name ?? '']
+          .some((v) => v.toLowerCase().includes(q));
+        if (!hit) return false;
+      }
+      return true;
+    });
+  }, [students, centerById, filters]);
 
   function openCreate() {
     setSheet({ open: true, mode: 'create' });
@@ -94,7 +153,7 @@ export function StudentsListPage() {
       const newStudent: StudentDto = {
         id: crypto.randomUUID(),
         organizationId: ORG_ID,
-        centerId: CENTER_ID,
+        paymentMethod: 'cash',
         createdAt: now,
         updatedAt: now,
         ...fields,
@@ -128,17 +187,87 @@ export function StudentsListPage() {
           <Plus className="h-4 w-4" />
           Nuevo alumno
         </Button>
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar..."
-            className="pl-9 bg-muted"
-            aria-label="Buscar alumnos"
-          />
-        </div>
       </div>
+
+      <FilterBar hasActive={hasActiveFilters} onClear={clearFilters}>
+        <FilterField label="Buscador">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.search}
+            onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+            placeholder="Nombre, email, teléfono..."
+            aria-label="Buscador general"
+          />
+        </FilterField>
+
+        <FilterField label="Nombre">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.firstName}
+            onChange={(e) => setFilters((f) => ({ ...f, firstName: e.target.value }))}
+            aria-label="Filtrar por nombre"
+          />
+        </FilterField>
+
+        <FilterField label="Apellidos">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.lastName}
+            onChange={(e) => setFilters((f) => ({ ...f, lastName: e.target.value }))}
+            aria-label="Filtrar por apellidos"
+          />
+        </FilterField>
+
+        <FilterField label="Email">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.email}
+            onChange={(e) => setFilters((f) => ({ ...f, email: e.target.value }))}
+            aria-label="Filtrar por email"
+          />
+        </FilterField>
+
+        <FilterField label="Teléfono">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.phone}
+            onChange={(e) => setFilters((f) => ({ ...f, phone: e.target.value }))}
+            aria-label="Filtrar por teléfono"
+          />
+        </FilterField>
+
+        <FilterField label="Academia">
+          <select
+            className={filterSelectClass}
+            value={filters.centerId}
+            onChange={(e) => setFilters((f) => ({ ...f, centerId: e.target.value }))}
+            aria-label="Filtrar por academia"
+          >
+            <option value="">Todas</option>
+            {MOCK_CENTERS.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </FilterField>
+
+        <FilterField label="Cuota">
+          <select
+            className={filterSelectClass}
+            value={filters.fee}
+            onChange={(e) => setFilters((f) => ({ ...f, fee: e.target.value as FeeFilter }))}
+            aria-label="Filtrar por cuota"
+          >
+            <option value="any">Cualquiera</option>
+            <option value="has">Con cuota</option>
+            <option value="none">Sin cuota</option>
+          </select>
+        </FilterField>
+      </FilterBar>
 
       <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
         <Table>
@@ -146,9 +275,11 @@ export function StudentsListPage() {
             <TableRow className="bg-muted hover:bg-muted">
               <TableHead className="w-12 text-muted-foreground">#</TableHead>
               <TableHead>Nombre completo</TableHead>
+              <TableHead>Academia</TableHead>
               <TableHead>Fecha nacimiento</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Teléfono</TableHead>
+              <TableHead>Cuota</TableHead>
               <TableHead>Tutores</TableHead>
               <TableHead className="w-32 text-right">Acciones</TableHead>
             </TableRow>
@@ -156,7 +287,7 @@ export function StudentsListPage() {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                   No hay alumnos que coincidan con la búsqueda.
                 </TableCell>
               </TableRow>
@@ -168,10 +299,16 @@ export function StudentsListPage() {
                     {s.firstName} {s.lastName}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
+                    {centerById.get(s.centerId)?.name ?? '—'}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
                     {dateFmt.format(new Date(s.birthDate))}
                   </TableCell>
                   <TableCell className="text-muted-foreground">{s.email ?? '—'}</TableCell>
                   <TableCell className="text-muted-foreground">{s.phone ?? '—'}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {s.monthlyFee != null ? eurFmt.format(s.monthlyFee) : '—'}
+                  </TableCell>
                   <TableCell className="text-muted-foreground">{s.guardians.length}</TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-1">
@@ -209,6 +346,7 @@ export function StudentsListPage() {
         onOpenChange={(open) => { if (!open) closeSheet(); }}
         mode={sheet.open ? sheet.mode : 'create'}
         student={sheet.open && sheet.mode === 'edit' ? sheet.student : undefined}
+        centers={MOCK_CENTERS}
         onSubmit={handleSheetSubmit}
       />
     </>

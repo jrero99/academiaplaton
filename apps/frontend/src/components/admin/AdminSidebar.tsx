@@ -6,6 +6,8 @@ import {
   UserCog,
   Users,
   CalendarDays,
+  Building2,
+  Receipt,
   BarChart3,
   MessageSquare,
   Settings,
@@ -27,6 +29,8 @@ const MAIN_ITEMS: NavItem[] = [
   { to: '/admin/teachers', label: 'Profesores', icon: UserCog },
   { to: '/admin/groups', label: 'Grupos', icon: Users },
   { to: '/admin/calendar', label: 'Calendario', icon: CalendarDays },
+  { to: '/admin/centers', label: 'Academias', icon: Building2 },
+  { to: '/admin/invoices', label: 'Recibos', icon: Receipt },
   { to: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
 ];
 

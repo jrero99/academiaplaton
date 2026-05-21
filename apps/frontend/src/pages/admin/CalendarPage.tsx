@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/admin/PageHeader';
 import { MOCK_GROUPS } from '@/features/groups/data/mock-groups';
 import { MOCK_TEACHERS } from '@/features/teachers/data/mock-teachers';
 import { MOCK_SESSIONS } from '@/features/sessions/data/mock-sessions';
+import { MOCK_CENTERS } from '@/features/centers/data/mock-centers';
 import { WeekCalendar } from '@/features/sessions/components/WeekCalendar';
 import { MonthCalendar } from '@/features/sessions/components/MonthCalendar';
 import { YearCalendar } from '@/features/sessions/components/YearCalendar';
@@ -29,11 +30,10 @@ import {
 } from '@/features/sessions/lib/week';
 import { cn } from '@/lib/utils';
 
-// MVP: una sola sede mientras no haya endpoint de centros wired.
-// Cuando se conecte el backend, este array vendrá de useCenters().
-const CENTERS = [
-  { id: '00000000-0000-0000-0000-0000000000c1', name: 'Plató — Sabadell' },
-];
+// Listado activo de academias (centros). Mientras no haya backend wired,
+// viene de mock-centers. Filtramos inactivas para no permitir crear
+// sesiones en una academia archivada.
+const CENTERS = MOCK_CENTERS.filter((c) => c.active);
 
 const WEEK_DAYS = 6; // Lun–Sáb
 
@@ -412,6 +412,7 @@ export function CalendarPage() {
         initialStartTime={sheet.open && sheet.mode === 'create' ? sheet.startTime : undefined}
         groups={centerGroups}
         teachers={MOCK_TEACHERS}
+        existingSessions={sessions.filter((s) => s.centerId === centerId)}
         onSubmit={handleSubmit}
         onDelete={handleDelete}
       />

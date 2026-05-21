@@ -11,8 +11,23 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { PageHeader } from '@/components/admin/PageHeader';
+import {
+  FilterBar,
+  FilterField,
+  filterSelectClass,
+} from '@/components/admin/FilterBar';
 import { LeadStatusBadge } from '@/features/leads/components/LeadStatusBadge';
 import { MOCK_LEADS } from '@/features/leads/data/mock-leads';
+import type { LeadStatus } from '@academiaplaton/shared';
+
+const STATUS_OPTIONS: Array<{ value: LeadStatus; label: string }> = [
+  { value: 'new', label: 'Nuevo' },
+  { value: 'contacted', label: 'Contactado' },
+  { value: 'visit_scheduled', label: 'Visita' },
+  { value: 'trial_class', label: 'Prueba' },
+  { value: 'converted', label: 'Convertido' },
+  { value: 'lost', label: 'Perdido' },
+];
 
 const dateFmt = new Intl.DateTimeFormat('es-ES', {
   day: '2-digit',
@@ -20,18 +35,45 @@ const dateFmt = new Intl.DateTimeFormat('es-ES', {
   year: 'numeric',
 });
 
+type FilterState = {
+  status: LeadStatus | '';
+  course: string;
+};
+
+const initialFilters: FilterState = { status: '', course: '' };
+
 export function LeadsListPage() {
   const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState<FilterState>(initialFilters);
+
+  const courseOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const l of MOCK_LEADS) {
+      if (l.interestedCourse) set.add(l.interestedCourse);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'es'));
+  }, []);
+
+  const hasActiveFilters = filters.status !== '' || filters.course !== '';
+
+  function clearFilters() {
+    setFilters(initialFilters);
+  }
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return MOCK_LEADS;
-    return MOCK_LEADS.filter((lead) =>
-      [lead.firstName, lead.lastName, lead.email, lead.interestedCourse]
-        .filter(Boolean)
-        .some((v) => v!.toLowerCase().includes(q)),
-    );
-  }, [search]);
+    return MOCK_LEADS.filter((lead) => {
+      if (filters.status && lead.status !== filters.status) return false;
+      if (filters.course && lead.interestedCourse !== filters.course) return false;
+      if (q) {
+        const hit = [lead.firstName, lead.lastName, lead.email, lead.interestedCourse]
+          .filter(Boolean)
+          .some((v) => v!.toLowerCase().includes(q));
+        if (!hit) return false;
+      }
+      return true;
+    });
+  }, [search, filters]);
 
   return (
     <>
@@ -50,11 +92,43 @@ export function LeadsListPage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar..."
+            placeholder="Nombre, email, curso..."
             className="pl-9 bg-muted"
           />
         </div>
       </div>
+
+      <FilterBar hasActive={hasActiveFilters} onClear={clearFilters}>
+        <FilterField label="Estado">
+          <select
+            className={filterSelectClass}
+            value={filters.status}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, status: e.target.value as LeadStatus | '' }))
+            }
+            aria-label="Filtrar por estado"
+          >
+            <option value="">Todos</option>
+            {STATUS_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </FilterField>
+
+        <FilterField label="Curso de interés">
+          <select
+            className={filterSelectClass}
+            value={filters.course}
+            onChange={(e) => setFilters((f) => ({ ...f, course: e.target.value }))}
+            aria-label="Filtrar por curso de interés"
+          >
+            <option value="">Todos</option>
+            {courseOptions.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </FilterField>
+      </FilterBar>
 
       <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
         <Table>

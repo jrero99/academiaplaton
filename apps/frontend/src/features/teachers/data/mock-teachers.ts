@@ -1,4 +1,9 @@
 import type { Teacher } from '../types';
+import {
+  CENTER_PLATON_TERESAS,
+  CENTER_PLATON_MOLINOS,
+  CENTER_PLATON_TERESAS_2,
+} from '@/features/centers/data/mock-centers';
 
 const ORG_ID = '00000000-0000-0000-0000-000000000001';
 
@@ -6,6 +11,7 @@ export const MOCK_TEACHERS: Teacher[] = [
   {
     id: '33333333-3333-3333-3333-333333333301',
     organizationId: ORG_ID,
+    centerId: CENTER_PLATON_TERESAS,
     firstName: 'Montserrat',
     lastName: 'Ferrer Bosch',
     email: 'montserrat.ferrer@platoacademia.com',
@@ -16,6 +22,7 @@ export const MOCK_TEACHERS: Teacher[] = [
   {
     id: '33333333-3333-3333-3333-333333333302',
     organizationId: ORG_ID,
+    centerId: CENTER_PLATON_MOLINOS,
     firstName: 'Jordi',
     lastName: 'Sala Puig',
     email: 'jordi.sala@platoacademia.com',
@@ -26,6 +33,7 @@ export const MOCK_TEACHERS: Teacher[] = [
   {
     id: '33333333-3333-3333-3333-333333333303',
     organizationId: ORG_ID,
+    centerId: CENTER_PLATON_TERESAS,
     firstName: 'Núria',
     lastName: 'Codina Mir',
     email: 'nuria.codina@platoacademia.com',
@@ -35,6 +43,7 @@ export const MOCK_TEACHERS: Teacher[] = [
   {
     id: '33333333-3333-3333-3333-333333333304',
     organizationId: ORG_ID,
+    centerId: CENTER_PLATON_TERESAS_2,
     firstName: 'Raül',
     lastName: 'Martínez Gómez',
     email: 'raul.martinez@platoacademia.com',
@@ -45,6 +54,7 @@ export const MOCK_TEACHERS: Teacher[] = [
   {
     id: '33333333-3333-3333-3333-333333333305',
     organizationId: ORG_ID,
+    centerId: CENTER_PLATON_MOLINOS,
     firstName: 'Laia',
     lastName: 'Domingo Coll',
     email: 'laia.domingo@platoacademia.com',
@@ -55,6 +65,7 @@ export const MOCK_TEACHERS: Teacher[] = [
   {
     id: '33333333-3333-3333-3333-333333333306',
     organizationId: ORG_ID,
+    centerId: CENTER_PLATON_TERESAS,
     firstName: 'Andreu',
     lastName: 'Pons Esteve',
     email: 'andreu.pons@platoacademia.com',

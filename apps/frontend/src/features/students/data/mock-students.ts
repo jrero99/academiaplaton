@@ -14,6 +14,8 @@ export const MOCK_STUDENTS: StudentDto[] = [
     email: 'ona.pujol@example.com',
     phone: '+34 612 000 111',
     address: 'Carrer Major 23, Sabadell',
+    monthlyFee: 120,
+    paymentMethod: 'cash',
     guardians: [
       {
         firstName: 'Marta',
@@ -35,6 +37,8 @@ export const MOCK_STUDENTS: StudentDto[] = [
     birthDate: '2011-07-04',
     email: 'hugo.riera@example.com',
     address: 'Avinguda Catalunya 45, Terrassa',
+    monthlyFee: 95,
+    paymentMethod: 'sepa',
     guardians: [
       {
         firstName: 'Pere',
@@ -55,6 +59,8 @@ export const MOCK_STUDENTS: StudentDto[] = [
     birthDate: '2008-11-25',
     email: 'berta.cases@example.com',
     phone: '+34 633 411 222',
+    monthlyFee: 140,
+    paymentMethod: 'cash',
     guardians: [
       {
         firstName: 'Isabel',
@@ -81,6 +87,8 @@ export const MOCK_STUDENTS: StudentDto[] = [
     lastName: 'Camps Aymar',
     birthDate: '2010-05-18',
     phone: '+34 611 305 442',
+    monthlyFee: 110,
+    paymentMethod: 'bank_transfer',
     guardians: [
       {
         firstName: 'Anna',
@@ -101,6 +109,8 @@ export const MOCK_STUDENTS: StudentDto[] = [
     birthDate: '2007-09-30',
     email: 'carla.font@example.com',
     phone: '+34 678 554 211',
+    monthlyFee: 130,
+    paymentMethod: 'sepa',
     fromLeadId: '11111111-1111-1111-1111-111111111105',
     guardians: [
       {

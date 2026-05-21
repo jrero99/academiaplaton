@@ -12,7 +12,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { PageHeader } from '@/components/admin/PageHeader';
+import {
+  FilterBar,
+  FilterField,
+  filterSelectClass,
+} from '@/components/admin/FilterBar';
 import { MOCK_TEACHERS } from '@/features/teachers/data/mock-teachers';
+import { MOCK_CENTERS } from '@/features/centers/data/mock-centers';
 import { TeacherSheet } from '@/features/teachers/components/TeacherSheet';
 import type { Teacher } from '@/features/teachers/types';
 
@@ -29,20 +35,45 @@ type SheetState =
   | { open: true; mode: 'create' }
   | { open: true; mode: 'edit'; teacher: Teacher };
 
+type StatusFilter = 'any' | 'active' | 'inactive';
+
+const initialFilters = {
+  centerId: '',
+  status: 'any' as StatusFilter,
+};
+
 export function TeachersListPage() {
   const [teachers, setTeachers] = useState<Teacher[]>(MOCK_TEACHERS);
   const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState(initialFilters);
   const [sheet, setSheet] = useState<SheetState>({ open: false });
+
+  const centerById = useMemo(
+    () => new Map(MOCK_CENTERS.map((c) => [c.id, c])),
+    [],
+  );
+
+  const hasActiveFilters = filters.centerId !== '' || filters.status !== 'any';
+
+  function clearFilters() {
+    setFilters(initialFilters);
+  }
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return teachers;
-    return teachers.filter((t) =>
-      [t.firstName, t.lastName, t.email]
-        .filter(Boolean)
-        .some((v) => v!.toLowerCase().includes(q)),
-    );
-  }, [search, teachers]);
+    return teachers.filter((t) => {
+      if (filters.centerId && t.centerId !== filters.centerId) return false;
+      if (filters.status === 'active' && !t.active) return false;
+      if (filters.status === 'inactive' && t.active) return false;
+      if (q) {
+        const center = centerById.get(t.centerId);
+        const hit = [t.firstName, t.lastName, t.email, t.phone ?? '', center?.name ?? '']
+          .some((v) => v.toLowerCase().includes(q));
+        if (!hit) return false;
+      }
+      return true;
+    });
+  }, [search, teachers, filters, centerById]);
 
   function openCreate() {
     setSheet({ open: true, mode: 'create' });
@@ -95,12 +126,41 @@ export function TeachersListPage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar..."
+            placeholder="Nombre, email, teléfono..."
             className="pl-9 bg-muted"
             aria-label="Buscar profesores"
           />
         </div>
       </div>
+
+      <FilterBar hasActive={hasActiveFilters} onClear={clearFilters}>
+        <FilterField label="Academia">
+          <select
+            className={filterSelectClass}
+            value={filters.centerId}
+            onChange={(e) => setFilters((f) => ({ ...f, centerId: e.target.value }))}
+            aria-label="Filtrar por academia"
+          >
+            <option value="">Todas</option>
+            {MOCK_CENTERS.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </FilterField>
+
+        <FilterField label="Estado">
+          <select
+            className={filterSelectClass}
+            value={filters.status}
+            onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value as StatusFilter }))}
+            aria-label="Filtrar por estado"
+          >
+            <option value="any">Cualquiera</option>
+            <option value="active">Activos</option>
+            <option value="inactive">Inactivos</option>
+          </select>
+        </FilterField>
+      </FilterBar>
 
       <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
         <Table>
@@ -108,6 +168,7 @@ export function TeachersListPage() {
             <TableRow className="bg-muted hover:bg-muted">
               <TableHead className="w-12 text-muted-foreground">#</TableHead>
               <TableHead>Nombre completo</TableHead>
+              <TableHead>Academia</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Teléfono</TableHead>
               <TableHead>Estado</TableHead>
@@ -118,7 +179,7 @@ export function TeachersListPage() {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                   No hay profesores que coincidan con la búsqueda.
                 </TableCell>
               </TableRow>
@@ -128,6 +189,9 @@ export function TeachersListPage() {
                   <TableCell className="font-medium text-muted-foreground">{idx + 1}</TableCell>
                   <TableCell className="font-medium">
                     {t.firstName} {t.lastName}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {centerById.get(t.centerId)?.name ?? '—'}
                   </TableCell>
                   <TableCell className="text-muted-foreground">{t.email}</TableCell>
                   <TableCell className="text-muted-foreground">{t.phone ?? '—'}</TableCell>
@@ -172,6 +236,7 @@ export function TeachersListPage() {
         onOpenChange={(open) => { if (!open) closeSheet(); }}
         mode={sheet.open ? sheet.mode : 'create'}
         teacher={sheet.open && sheet.mode === 'edit' ? sheet.teacher : undefined}
+        centers={MOCK_CENTERS}
         onSubmit={handleSheetSubmit}
       />
     </>

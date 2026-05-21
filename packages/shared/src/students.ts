@@ -1,6 +1,8 @@
 import { z } from 'zod';
+import { PaymentMethod } from './billing.js';
 
 const phoneRegex = /^[+]?[0-9\s-]{7,20}$/;
+const taxIdRegex = /^[A-Z0-9-]{5,20}$/i;
 
 export const GuardianSchema = z.object({
   firstName: z.string().min(1).max(80),
@@ -20,6 +22,17 @@ export const StudentCreateSchema = z.object({
   phone: z.string().regex(phoneRegex).optional(),
   address: z.string().max(240).optional(),
   notes: z.string().max(2000).optional(),
+  // Cuota mensual en euros. Importe base que se factura cada mes al alumno.
+  monthlyFee: z.number().nonnegative().max(99999).optional(),
+  // Fiscalidad: datos para emitir factura. Pueden estar vacíos.
+  taxId: z.string().regex(taxIdRegex).optional(),
+  billingName: z.string().max(160).optional(),
+  billingTaxId: z.string().regex(taxIdRegex).optional(),
+  billingAddress: z.string().max(240).optional(),
+  billingEmail: z.string().email().max(160).optional(),
+  // Método de pago y mandato SEPA asociado.
+  paymentMethod: PaymentMethod.default('cash'),
+  sepaMandateId: z.string().uuid().optional(),
   guardians: z.array(GuardianSchema).max(4).default([]),
   groupId: z.string().uuid().optional(),
   fromLeadId: z.string().uuid().optional(),

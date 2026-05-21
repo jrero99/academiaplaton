@@ -12,6 +12,7 @@ import { studentsRouter } from './modules/students/students.router.js';
 import { teachersRouter } from './modules/teachers/teachers.router.js';
 import { groupsRouter } from './modules/groups/groups.router.js';
 import { sessionsRouter } from './modules/sessions/sessions.router.js';
+import { sepaRouter } from './modules/billing/sepa.router.js';
 
 export function createApp() {
   const app = express();
@@ -44,6 +45,7 @@ export function createApp() {
   app.use('/api/teachers', teachersRouter);
   app.use('/api/groups', groupsRouter);
   app.use('/api/sessions', sessionsRouter);
+  app.use('/api/sepa-mandates', sepaRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

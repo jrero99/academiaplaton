@@ -42,13 +42,15 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships UserOrganization[]
-  leads       Lead[]
-  students    Student[]
-  teachers    Teacher[]
-  centers     Center[]
-  groups      Group[]
-  sessions    Session[]
+  memberships  UserOrganization[]
+  leads        Lead[]
+  students     Student[]
+  teachers     Teacher[]
+  centers      Center[]
+  groups       Group[]
+  sessions     Session[]
+  sepaMandates SepaMandate[]
+  invoices     Invoice[]
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -134,6 +136,41 @@ enum GuardianRelationship {
   other
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Fiscalidad y pagos
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum PaymentMethod {
+  cash
+  sepa
+  bank_transfer
+  other
+}
+
+enum SepaMandateType {
+  core  // Adeudo SEPA básico (consumidores)
+  b2b   // Adeudo SEPA B2B (entre empresas)
+}
+
+enum SepaDebitType {
+  recurrent  // RCUR — adeudos periódicos
+  one_off    // OOFF — un único cobro
+}
+
+enum SepaMandateStatus {
+  active
+  paused
+  revoked
+}
+
+enum InvoiceStatus {
+  pending    // creada, aún sin enviar cobro
+  sent       // cobro enviado al pagador
+  paid       // cobrada
+  overdue    // vencida sin cobrar
+  cancelled  // anulada
+}
+
 model Lead {
   id               String     @id @default(uuid()) @db.Char(36)
   organizationId   String     @db.Char(36)
@@ -167,19 +204,122 @@ model Student {
   phone          String?  @db.VarChar(20)
   address        String?  @db.VarChar(240)
   notes          String?  @db.Text
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+
+  // Cuota mensual (€). Base para generar recibos del módulo billing.
+  monthlyFee     Decimal? @db.Decimal(8, 2)
+
+  // Fiscalidad / facturación: datos para emitir factura.
+  // Pueden estar vacíos si el alumno no requiere factura nominal.
+  taxId          String? @db.VarChar(20)  // NIF/DNI del alumno (si aplica)
+  billingName    String? @db.VarChar(160) // Razón social / nombre en la factura
+  billingTaxId   String? @db.VarChar(20)  // NIF del facturado (alumno o responsable)
+  billingAddress String? @db.VarChar(240)
+  billingEmail   String? @db.VarChar(160)
+
+  // Método de pago habitual del alumno
+  paymentMethod PaymentMethod @default(cash)
+
+  // Mandato SEPA asociado (solo si paymentMethod = sepa).
+  // Varios alumnos (hermanos) pueden compartir el mismo mandato → N:1.
+  sepaMandateId String?      @db.Char(36)
+  sepaMandate   SepaMandate? @relation(fields: [sepaMandateId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   fromLeadId String? @unique @db.Char(36)
   fromLead   Lead?   @relation(fields: [fromLeadId], references: [id], onDelete: SetNull)
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  center       Center       @relation(fields: [centerId], references: [id], onDelete: Restrict)
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  center       Center         @relation(fields: [centerId], references: [id], onDelete: Restrict)
   guardians    Guardian[]
   groups       GroupStudent[]
+  invoices     Invoice[]
 
   @@index([organizationId, centerId])
   @@index([organizationId, lastName, firstName])
+  @@index([organizationId, sepaMandateId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mandato SEPA — autorización de cobro por adeudo directo.
+// Los datos del titular se almacenan planos (NO relación a Guardian/Student)
+// porque (a) el titular puede no estar en BD (familiar externo) y (b) el
+// mandato debe ser inmutable una vez firmado aunque cambien datos del Guardian.
+// TODO seguridad: cifrar `iban` antes de producción (LOPD §5 CLAUDE.md).
+// ─────────────────────────────────────────────────────────────────────────────
+
+model SepaMandate {
+  id             String @id @default(uuid()) @db.Char(36)
+  organizationId String @db.Char(36)
+
+  // Referencia única del mandato (la usa el banco para identificarlo)
+  reference String @db.VarChar(35) // SEPA permite hasta 35 chars
+
+  // Datos del titular de la cuenta (snapshot en el momento de firma)
+  holderName    String  @db.VarChar(160)
+  holderTaxId   String  @db.VarChar(20)
+  holderAddress String? @db.VarChar(240)
+  holderEmail   String? @db.VarChar(160)
+  holderPhone   String? @db.VarChar(20)
+
+  // Datos bancarios
+  iban String @db.VarChar(34)   // IBAN sin espacios; TODO cifrar en prod
+  bic  String? @db.VarChar(11)  // opcional en SEPA zona euro
+
+  // Configuración del mandato
+  mandateType SepaMandateType   @default(core)
+  debitType   SepaDebitType     @default(recurrent)
+  status      SepaMandateStatus @default(active)
+
+  signedAt   DateTime  @db.Date
+  revokedAt  DateTime?
+
+  notes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  students     Student[]
+
+  @@unique([organizationId, reference])
+  @@index([organizationId, status])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Billing — Recibos/facturas mensuales por alumno.
+// Cada recibo es atómico (1 alumno, 1 periodo). `issuedAt` queda null hasta que
+// se envía el cobro al pagador (paso visible al usuario en la UI).
+// `number` único por organización para evitar colisiones de numeración.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Invoice {
+  id             String        @id @default(uuid()) @db.Char(36)
+  organizationId String        @db.Char(36)
+  studentId      String        @db.Char(36)
+
+  number      String        @db.VarChar(40)
+  concept     String        @db.VarChar(160)
+  amount      Decimal       @db.Decimal(10, 2)
+  periodMonth Int           @db.UnsignedTinyInt  // 1..12
+  periodYear  Int           @db.UnsignedSmallInt // 2020..2100
+  dueDate     DateTime      @db.Date
+  issuedAt    DateTime?     // fecha en que se envió el cobro (null si pendiente)
+  status      InvoiceStatus @default(pending)
+  notes       String?       @db.VarChar(500)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  student      Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, number])
+  @@unique([studentId, periodYear, periodMonth])
+  @@index([organizationId, status])
+  @@index([organizationId, periodYear, periodMonth])
+  @@index([organizationId, dueDate])
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

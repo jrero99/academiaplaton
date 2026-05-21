@@ -1,4 +1,4 @@
-import type { Guardian, Student } from '@prisma/client';
+import { Prisma, type Guardian, type Student } from '@prisma/client';
 import type {
   StudentCreate,
   StudentDto,
@@ -23,6 +23,14 @@ function toDto(s: StudentWithGuardians): StudentDto {
     phone: s.phone ?? undefined,
     address: s.address ?? undefined,
     notes: s.notes ?? undefined,
+    monthlyFee: s.monthlyFee ? Number(s.monthlyFee) : undefined,
+    taxId: s.taxId ?? undefined,
+    billingName: s.billingName ?? undefined,
+    billingTaxId: s.billingTaxId ?? undefined,
+    billingAddress: s.billingAddress ?? undefined,
+    billingEmail: s.billingEmail ?? undefined,
+    paymentMethod: s.paymentMethod,
+    sepaMandateId: s.sepaMandateId ?? undefined,
     fromLeadId: s.fromLeadId ?? undefined,
     guardians: s.guardians.map((g) => ({
       firstName: g.firstName,
@@ -40,6 +48,13 @@ async function assertCenterBelongsToOrg(organizationId: string, centerId: string
   const center = await prisma.center.findUnique({ where: { id: centerId } });
   if (!center || center.organizationId !== organizationId) {
     throw AppError.notFound('Center');
+  }
+}
+
+async function assertMandateBelongsToOrg(organizationId: string, mandateId: string) {
+  const mandate = await prisma.sepaMandate.findUnique({ where: { id: mandateId } });
+  if (!mandate || mandate.organizationId !== organizationId) {
+    throw AppError.notFound('SepaMandate');
   }
 }
 
@@ -74,13 +89,26 @@ export const studentsService = {
 
   async create(organizationId: string, input: StudentCreate): Promise<StudentDto> {
     await assertCenterBelongsToOrg(organizationId, input.centerId);
-    const { guardians, fromLeadId, centerId, groupId: _groupId, ...rest } = input;
+    if (input.sepaMandateId) {
+      await assertMandateBelongsToOrg(organizationId, input.sepaMandateId);
+    }
+    const {
+      guardians,
+      fromLeadId,
+      centerId,
+      sepaMandateId,
+      monthlyFee,
+      groupId: _groupId,
+      ...rest
+    } = input;
     const created = await studentsRepo.create({
       ...rest,
       birthDate: new Date(input.birthDate),
+      ...(monthlyFee !== undefined && { monthlyFee: new Prisma.Decimal(monthlyFee) }),
       organization: { connect: { id: organizationId } },
       center: { connect: { id: centerId } },
       ...(fromLeadId && { fromLead: { connect: { id: fromLeadId } } }),
+      ...(sepaMandateId && { sepaMandate: { connect: { id: sepaMandateId } } }),
       guardians: { create: guardians },
     });
     return toDto(created);
@@ -92,11 +120,26 @@ export const studentsService = {
     if (input.centerId && input.centerId !== exists.centerId) {
       await assertCenterBelongsToOrg(organizationId, input.centerId);
     }
-    const { guardians, fromLeadId: _fromLeadId, centerId, groupId: _groupId, ...rest } = input;
+    if (input.sepaMandateId && input.sepaMandateId !== exists.sepaMandateId) {
+      await assertMandateBelongsToOrg(organizationId, input.sepaMandateId);
+    }
+    const {
+      guardians,
+      fromLeadId: _fromLeadId,
+      centerId,
+      sepaMandateId,
+      monthlyFee,
+      groupId: _groupId,
+      ...rest
+    } = input;
     const updated = await studentsRepo.update(id, {
       ...rest,
       ...(input.birthDate && { birthDate: new Date(input.birthDate) }),
+      ...(monthlyFee !== undefined && { monthlyFee: new Prisma.Decimal(monthlyFee) }),
       ...(centerId && { center: { connect: { id: centerId } } }),
+      ...('sepaMandateId' in input && {
+        sepaMandate: sepaMandateId ? { connect: { id: sepaMandateId } } : { disconnect: true },
+      }),
       ...(guardians && {
         guardians: { deleteMany: {}, create: guardians },
       }),

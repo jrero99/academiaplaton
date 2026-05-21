@@ -1,7 +1,8 @@
+import { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Trash2 } from 'lucide-react';
+import { AlertTriangle, Trash2 } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -41,9 +42,14 @@ interface Props {
   initialStartTime?: string;
   groups: GroupDto[]; // ya filtrados por centro activo
   teachers: Teacher[];
+  // Sesiones existentes para detección de conflictos en vivo (mismo prof o mismo grupo)
+  existingSessions: SessionDto[];
   onSubmit: (data: SessionFormValues) => void;
   onDelete?: (id: string) => void;
 }
+
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function SessionForm({
   mode,
@@ -52,6 +58,7 @@ function SessionForm({
   initialStartTime,
   groups,
   teachers,
+  existingSessions,
   onSubmit,
   onDelete,
   onCancel,
@@ -85,11 +92,54 @@ function SessionForm({
   });
 
   const selectedGroupId = watch('groupId');
+  const watchedDate = watch('date');
+  const watchedStart = watch('startTime');
+  const watchedEnd = watch('endTime');
   const selectedGroup = groups.find((g) => g.id === selectedGroupId);
   const teacher = selectedGroup
     ? teachers.find((t) => t.id === selectedGroup.teacherId)
     : undefined;
   const color = teacher ? teacherColor(teacher.id) : undefined;
+
+  // Detección de conflicto en vivo: misma fecha + (mismo profesor o mismo grupo)
+  // + solapamiento horario. Excluye la sesión actual si estamos editando.
+  const conflict = useMemo(() => {
+    if (!selectedGroup || !teacher) return null;
+    if (!DATE_RE.test(watchedDate)) return null;
+    if (!TIME_RE.test(watchedStart) || !TIME_RE.test(watchedEnd)) return null;
+    if (watchedStart >= watchedEnd) return null;
+
+    const editingId = mode === 'edit' && session ? session.id : null;
+    const hit = existingSessions.find(
+      (s) =>
+        s.id !== editingId &&
+        s.date === watchedDate &&
+        (s.teacherId === teacher.id || s.groupId === selectedGroup.id) &&
+        s.startTime < watchedEnd &&
+        s.endTime > watchedStart,
+    );
+    if (!hit) return null;
+
+    const reason: 'teacher' | 'group' =
+      hit.groupId === selectedGroup.id ? 'group' : 'teacher';
+    return {
+      session: hit,
+      reason,
+      conflictGroup: groups.find((g) => g.id === hit.groupId),
+      conflictTeacher: teachers.find((t) => t.id === hit.teacherId),
+    };
+  }, [
+    selectedGroup,
+    teacher,
+    watchedDate,
+    watchedStart,
+    watchedEnd,
+    existingSessions,
+    mode,
+    session,
+    groups,
+    teachers,
+  ]);
 
   return (
     <>
@@ -187,6 +237,41 @@ function SessionForm({
           </div>
         </div>
 
+        {/* Aviso de conflicto */}
+        {conflict && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive"
+          >
+            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+            <div className="flex-1">
+              {conflict.reason === 'teacher' ? (
+                <>
+                  <strong>
+                    {conflict.conflictTeacher
+                      ? `${conflict.conflictTeacher.firstName} ${conflict.conflictTeacher.lastName}`
+                      : 'El profesor'}
+                  </strong>{' '}
+                  ya tiene asignada la sesión
+                  {conflict.conflictGroup ? ` de ${conflict.conflictGroup.name}` : ''} de{' '}
+                  <strong>
+                    {conflict.session.startTime}–{conflict.session.endTime}
+                  </strong>{' '}
+                  ese día. Cambia la franja horaria o asigna un grupo con otro profesor.
+                </>
+              ) : (
+                <>
+                  Este grupo ya tiene una sesión asignada de{' '}
+                  <strong>
+                    {conflict.session.startTime}–{conflict.session.endTime}
+                  </strong>{' '}
+                  ese día. Elige otra franja horaria.
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Notas */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="session-notes" className="text-sm font-medium">
@@ -220,7 +305,12 @@ function SessionForm({
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button type="submit" form="session-form" disabled={isSubmitting}>
+        <Button
+          type="submit"
+          form="session-form"
+          disabled={isSubmitting || !!conflict}
+          title={conflict ? 'Hay un conflicto que resolver antes de guardar' : undefined}
+        >
           {mode === 'create' ? 'Crear sesión' : 'Guardar cambios'}
         </Button>
       </SheetFooter>
@@ -237,6 +327,7 @@ export function SessionSheet({
   initialStartTime,
   groups,
   teachers,
+  existingSessions,
   onSubmit,
   onDelete,
 }: Props) {
@@ -273,6 +364,7 @@ export function SessionSheet({
           initialStartTime={initialStartTime}
           groups={groups}
           teachers={teachers}
+          existingSessions={existingSessions}
           onSubmit={handleSubmit}
           onDelete={onDelete ? handleDelete : undefined}
           onCancel={() => onOpenChange(false)}

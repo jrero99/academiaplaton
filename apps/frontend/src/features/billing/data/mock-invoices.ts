@@ -1,0 +1,67 @@
+import type { InvoiceDto } from '@academiaplaton/shared';
+
+const ORG_ID = '00000000-0000-0000-0000-000000000001';
+
+// Mock de recibos del mes en curso (mayo 2026). Estados mezclados para que la
+// UI muestre las variantes (pendiente, enviado, pagado, vencido).
+export const MOCK_INVOICES: InvoiceDto[] = [
+  {
+    id: '33333333-3333-3333-3333-333333333301',
+    organizationId: ORG_ID,
+    studentId: '22222222-2222-2222-2222-222222222201',
+    number: '2026-05-0001',
+    concept: 'Cuota mayo 2026',
+    amount: 120,
+    periodMonth: 5,
+    periodYear: 2026,
+    dueDate: '2026-05-31',
+    issuedAt: '2026-05-02T09:00:00.000Z',
+    status: 'paid',
+    createdAt: '2026-05-01T08:00:00.000Z',
+    updatedAt: '2026-05-15T11:20:00.000Z',
+  },
+  {
+    id: '33333333-3333-3333-3333-333333333302',
+    organizationId: ORG_ID,
+    studentId: '22222222-2222-2222-2222-222222222202',
+    number: '2026-05-0002',
+    concept: 'Cuota mayo 2026',
+    amount: 95,
+    periodMonth: 5,
+    periodYear: 2026,
+    dueDate: '2026-05-31',
+    issuedAt: '2026-05-02T09:00:00.000Z',
+    status: 'sent',
+    createdAt: '2026-05-01T08:00:00.000Z',
+    updatedAt: '2026-05-02T09:00:00.000Z',
+  },
+  {
+    id: '33333333-3333-3333-3333-333333333303',
+    organizationId: ORG_ID,
+    studentId: '22222222-2222-2222-2222-222222222203',
+    number: '2026-05-0003',
+    concept: 'Cuota mayo 2026',
+    amount: 140,
+    periodMonth: 5,
+    periodYear: 2026,
+    dueDate: '2026-05-31',
+    status: 'pending',
+    createdAt: '2026-05-01T08:00:00.000Z',
+    updatedAt: '2026-05-01T08:00:00.000Z',
+  },
+  {
+    id: '33333333-3333-3333-3333-333333333304',
+    organizationId: ORG_ID,
+    studentId: '22222222-2222-2222-2222-222222222204',
+    number: '2026-04-0010',
+    concept: 'Cuota abril 2026',
+    amount: 110,
+    periodMonth: 4,
+    periodYear: 2026,
+    dueDate: '2026-04-30',
+    issuedAt: '2026-04-03T09:00:00.000Z',
+    status: 'overdue',
+    createdAt: '2026-04-01T08:00:00.000Z',
+    updatedAt: '2026-05-01T09:30:00.000Z',
+  },
+];

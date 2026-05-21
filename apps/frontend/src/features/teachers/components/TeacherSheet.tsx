@@ -13,12 +13,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import type { CenterDto } from '@academiaplaton/shared';
 import type { Teacher } from '../types';
 
 // ------------------------------------------------------------------ schema
 const teacherSchema = z.object({
   firstName: z.string().min(1, 'El nombre es obligatorio'),
   lastName: z.string().min(1, 'Los apellidos son obligatorios'),
+  centerId: z.string().uuid('Selecciona una academia'),
   email: z.string().min(1, 'El email es obligatorio').email('Formato de email no válido'),
   phone: z
     .string()
@@ -32,11 +34,16 @@ type FormValues = z.infer<typeof teacherSchema>;
 
 type PasswordState = 'idle' | 'confirming' | 'loading' | 'success';
 
+// Native select alineado con shadcn Input
+const selectClassName =
+  'h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-sm dark:bg-input/30';
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: 'create' | 'edit';
   teacher?: Teacher;
+  centers: CenterDto[];
   onSubmit: (data: FormValues) => void;
 }
 
@@ -44,11 +51,13 @@ interface Props {
 function TeacherForm({
   mode,
   teacher,
+  centers,
   onSubmit,
   onCancel,
 }: {
   mode: 'create' | 'edit';
   teacher?: Teacher;
+  centers: CenterDto[];
   onSubmit: (data: FormValues) => void;
   onCancel: () => void;
 }) {
@@ -69,11 +78,19 @@ function TeacherForm({
         ? {
             firstName: teacher.firstName,
             lastName: teacher.lastName,
+            centerId: teacher.centerId,
             email: teacher.email,
             phone: teacher.phone ?? '',
             active: teacher.active,
           }
-        : { firstName: '', lastName: '', email: '', phone: '', active: true },
+        : {
+            firstName: '',
+            lastName: '',
+            centerId: '',
+            email: '',
+            phone: '',
+            active: true,
+          },
   });
 
   function handleFormSubmit(values: FormValues) {
@@ -126,6 +143,32 @@ function TeacherForm({
           />
           {errors.lastName && (
             <p role="alert" className="text-xs text-destructive">{errors.lastName.message}</p>
+          )}
+        </div>
+
+        {/* Academia (1:1 profesor ↔ academia) */}
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="teacher-center" className="text-sm font-medium">
+            Academia <span aria-hidden="true" className="text-destructive">*</span>
+          </label>
+          <select
+            id="teacher-center"
+            aria-invalid={!!errors.centerId}
+            className={selectClassName}
+            {...register('centerId')}
+          >
+            <option value="">— Selecciona una academia —</option>
+            {centers
+              .filter((c) => c.active || (teacher && c.id === teacher.centerId))
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                  {!c.active ? ' (inactiva)' : ''}
+                </option>
+              ))}
+          </select>
+          {errors.centerId && (
+            <p role="alert" className="text-xs text-destructive">{errors.centerId.message}</p>
           )}
         </div>
 
@@ -254,7 +297,7 @@ function TeacherForm({
 }
 
 // ------------------------------------------------------------------ shell
-export function TeacherSheet({ open, onOpenChange, mode, teacher, onSubmit }: Props) {
+export function TeacherSheet({ open, onOpenChange, mode, teacher, centers, onSubmit }: Props) {
   function handleSubmit(data: FormValues) {
     onSubmit(data);
     onOpenChange(false);
@@ -280,6 +323,7 @@ export function TeacherSheet({ open, onOpenChange, mode, teacher, onSubmit }: Pr
           key={formKey}
           mode={mode}
           teacher={teacher}
+          centers={centers}
           onSubmit={handleSubmit}
           onCancel={() => onOpenChange(false)}
         />

@@ -33,6 +33,73 @@ const GUTTER_WIDTH_PX = 64;
 
 const DAY_LABELS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
+// Reparte sesiones del mismo día en "lanes" cuando solapan en horario.
+// Sesiones con grupos y profesores distintos pueden coincidir a la misma hora
+// — en ese caso se renderizan lado a lado en lugar de unas encima de otras.
+//
+// Algoritmo clásico de overlap layout:
+//  1) Ordenar por startTime ASC, endTime ASC.
+//  2) Mantener un cluster activo (grupo de sesiones que solapan entre sí,
+//     directa o transitivamente). Cuando aparece una sesión cuyo startTime
+//     es >= al endTime máximo del cluster, se cierra el cluster y empieza
+//     uno nuevo.
+//  3) Dentro del cluster, cada sesión se coloca en la primera columna libre
+//     (cuya última sesión termina antes del startTime de la candidata) o se
+//     abre una nueva. El total de columnas del cluster = ancho que comparten
+//     todos sus miembros.
+function layoutOverlaps(
+  sessions: SessionDto[],
+): Map<string, { col: number; cols: number }> {
+  const sorted = [...sessions].sort((a, b) => {
+    if (a.startTime !== b.startTime) return a.startTime.localeCompare(b.startTime);
+    return a.endTime.localeCompare(b.endTime);
+  });
+
+  const layout = new Map<string, { col: number; cols: number }>();
+  let columns: SessionDto[][] = [];
+  let clusterIds: string[] = [];
+  let clusterMaxEnd = '';
+
+  function flushCluster() {
+    const cols = columns.length || 1;
+    for (const id of clusterIds) {
+      const entry = layout.get(id);
+      if (entry) entry.cols = cols;
+    }
+    columns = [];
+    clusterIds = [];
+    clusterMaxEnd = '';
+  }
+
+  for (const s of sorted) {
+    if (clusterIds.length > 0 && s.startTime >= clusterMaxEnd) {
+      flushCluster();
+    }
+
+    let placedCol = -1;
+    for (let i = 0; i < columns.length; i++) {
+      const col = columns[i]!;
+      const last = col[col.length - 1]!;
+      if (last.endTime <= s.startTime) {
+        col.push(s);
+        placedCol = i;
+        break;
+      }
+    }
+    if (placedCol === -1) {
+      columns.push([s]);
+      placedCol = columns.length - 1;
+    }
+
+    layout.set(s.id, { col: placedCol, cols: 0 });
+    clusterIds.push(s.id);
+    if (s.endTime > clusterMaxEnd) clusterMaxEnd = s.endTime;
+  }
+
+  flushCluster();
+  return layout;
+}
+
 export function WeekCalendar({
   weekStart,
   sessions,
@@ -190,6 +257,7 @@ function DayColumn({
 }) {
   const slotsCount = (endMin - startMin) / SLOT_MINUTES;
   const [dragOverSlot, setDragOverSlot] = useState<number | null>(null);
+  const overlapLayout = useMemo(() => layoutOverlaps(sessions), [sessions]);
 
   function handleSlotDragOver(e: React.DragEvent<HTMLButtonElement>, slotIdx: number) {
     if (!onSessionDrop) return;
@@ -270,6 +338,9 @@ function DayColumn({
 
         const isDragging = draggingId === s.id;
         const draggable = !!onSessionDrop;
+        const lane = overlapLayout.get(s.id) ?? { col: 0, cols: 1 };
+        const leftPct = (lane.col / lane.cols) * 100;
+        const widthPct = (1 / lane.cols) * 100;
         return (
           <button
             key={s.id}
@@ -287,13 +358,15 @@ function DayColumn({
               onSessionClick(s);
             }}
             className={
-              'absolute left-1 right-1 rounded-md border text-left px-2 py-1 overflow-hidden shadow-sm hover:shadow transition-shadow z-10 ' +
+              'absolute rounded-md border text-left px-2 py-1 overflow-hidden shadow-sm hover:shadow transition-shadow z-10 ' +
               (draggable ? 'cursor-grab active:cursor-grabbing ' : '') +
               (isDragging ? 'opacity-40' : '')
             }
             style={{
               top: visibleTop,
               height: visibleHeight,
+              left: `calc(${leftPct}% + 2px)`,
+              width: `calc(${widthPct}% - 4px)`,
               backgroundColor: color.bg,
               borderColor: color.border,
               color: color.text,

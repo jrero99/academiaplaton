@@ -12,6 +12,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { PageHeader } from '@/components/admin/PageHeader';
+import {
+  FilterBar,
+  FilterField,
+  filterSelectClass,
+} from '@/components/admin/FilterBar';
+import { MOCK_CENTERS } from '@/features/centers/data/mock-centers';
 import { MOCK_GROUPS } from '@/features/groups/data/mock-groups';
 import {
   GroupSheet,
@@ -29,9 +35,26 @@ type SheetState =
   | { open: true; mode: 'create' }
   | { open: true; mode: 'edit'; group: GroupDto };
 
+type StatusFilter = 'any' | 'active' | 'inactive';
+
+type FilterState = {
+  centerId: string;
+  teacherId: string;
+  status: StatusFilter;
+  subject: string;
+};
+
+const initialFilters: FilterState = {
+  centerId: '',
+  teacherId: '',
+  status: 'any',
+  subject: '',
+};
+
 export function GroupsListPage() {
   const [groups, setGroups] = useState<GroupDto[]>(MOCK_GROUPS);
   const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState<FilterState>(initialFilters);
   const [sheet, setSheet] = useState<SheetState>({ open: false });
 
   const teacherById = useMemo(
@@ -39,16 +62,42 @@ export function GroupsListPage() {
     [],
   );
 
+  const subjectOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const g of groups) {
+      if (g.subject) set.add(g.subject);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'es'));
+  }, [groups]);
+
+  const hasActiveFilters =
+    filters.centerId !== '' ||
+    filters.teacherId !== '' ||
+    filters.status !== 'any' ||
+    filters.subject !== '';
+
+  function clearFilters() {
+    setFilters(initialFilters);
+  }
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return groups;
     return groups.filter((g) => {
-      const teacher = teacherById.get(g.teacherId);
-      const teacherName = teacher ? `${teacher.firstName} ${teacher.lastName}` : '';
-      return [g.name, g.subject ?? '', g.description ?? '', teacherName]
-        .some((v) => v.toLowerCase().includes(q));
+      if (filters.centerId && g.centerId !== filters.centerId) return false;
+      if (filters.teacherId && g.teacherId !== filters.teacherId) return false;
+      if (filters.status === 'active' && !g.active) return false;
+      if (filters.status === 'inactive' && g.active) return false;
+      if (filters.subject && g.subject !== filters.subject) return false;
+      if (q) {
+        const teacher = teacherById.get(g.teacherId);
+        const teacherName = teacher ? `${teacher.firstName} ${teacher.lastName}` : '';
+        const hit = [g.name, g.subject ?? '', g.description ?? '', teacherName]
+          .some((v) => v.toLowerCase().includes(q));
+        if (!hit) return false;
+      }
+      return true;
     });
-  }, [search, groups, teacherById]);
+  }, [search, groups, teacherById, filters]);
 
   function openCreate() {
     setSheet({ open: true, mode: 'create' });
@@ -126,12 +175,73 @@ export function GroupsListPage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar..."
+            placeholder="Nombre, asignatura, descripción..."
             className="pl-9 bg-muted"
             aria-label="Buscar grupos"
           />
         </div>
       </div>
+
+      <FilterBar hasActive={hasActiveFilters} onClear={clearFilters}>
+        <FilterField label="Academia">
+          <select
+            className={filterSelectClass}
+            value={filters.centerId}
+            onChange={(e) => setFilters((f) => ({ ...f, centerId: e.target.value }))}
+            aria-label="Filtrar por academia"
+          >
+            <option value="">Todas</option>
+            {MOCK_CENTERS.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </FilterField>
+
+        <FilterField label="Asignatura">
+          <select
+            className={filterSelectClass}
+            value={filters.subject}
+            onChange={(e) => setFilters((f) => ({ ...f, subject: e.target.value }))}
+            aria-label="Filtrar por asignatura"
+          >
+            <option value="">Todas</option>
+            {subjectOptions.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </FilterField>
+
+        <FilterField label="Profesor titular">
+          <select
+            className={filterSelectClass}
+            value={filters.teacherId}
+            onChange={(e) => setFilters((f) => ({ ...f, teacherId: e.target.value }))}
+            aria-label="Filtrar por profesor titular"
+          >
+            <option value="">Todos</option>
+            {MOCK_TEACHERS.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.firstName} {t.lastName}
+              </option>
+            ))}
+          </select>
+        </FilterField>
+
+        <FilterField label="Estado">
+          <select
+            className={filterSelectClass}
+            value={filters.status}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, status: e.target.value as StatusFilter }))
+            }
+            aria-label="Filtrar por estado"
+          >
+            <option value="any">Cualquiera</option>
+            <option value="active">Activos</option>
+            <option value="inactive">Inactivos</option>
+          </select>
+        </FilterField>
+      </FilterBar>
 
       <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
         <Table>
