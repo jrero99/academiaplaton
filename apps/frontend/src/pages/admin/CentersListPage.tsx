@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Plus, Search, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -15,6 +14,7 @@ import { PageHeader } from '@/components/admin/PageHeader';
 import {
   FilterBar,
   FilterField,
+  filterInputClass,
   filterSelectClass,
 } from '@/components/admin/FilterBar';
 import type { CenterDto } from '@academiaplaton/shared';
@@ -33,25 +33,48 @@ type SheetState =
 
 type StatusFilter = 'any' | 'active' | 'inactive';
 
-const initialFilters = { status: 'any' as StatusFilter };
+const initialFilters = {
+  search: '',
+  name: '',
+  slug: '',
+  address: '',
+  phone: '',
+  status: 'any' as StatusFilter,
+};
+
+function includesCi(haystack: string | null | undefined, needle: string): boolean {
+  if (!needle) return true;
+  return (haystack ?? '').toLowerCase().includes(needle.toLowerCase());
+}
 
 export function CentersListPage() {
   const [centers, setCenters] = useState<CenterDto[]>(MOCK_CENTERS);
-  const [search, setSearch] = useState('');
   const [filters, setFilters] = useState(initialFilters);
   const [sheet, setSheet] = useState<SheetState>({ open: false });
 
-  const hasActiveFilters = filters.status !== 'any';
+  const hasActiveFilters =
+    filters.search !== '' ||
+    filters.name !== '' ||
+    filters.slug !== '' ||
+    filters.address !== '' ||
+    filters.phone !== '' ||
+    filters.status !== 'any';
 
   function clearFilters() {
     setFilters(initialFilters);
   }
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = filters.search.trim().toLowerCase();
     return centers.filter((c) => {
       if (filters.status === 'active' && !c.active) return false;
       if (filters.status === 'inactive' && c.active) return false;
+
+      if (!includesCi(c.name, filters.name)) return false;
+      if (!includesCi(c.slug, filters.slug)) return false;
+      if (!includesCi(c.address, filters.address)) return false;
+      if (!includesCi(c.phone, filters.phone)) return false;
+
       if (q) {
         const hit = [c.name, c.slug, c.address ?? '', c.email ?? '', c.phone ?? '']
           .some((v) => v.toLowerCase().includes(q));
@@ -59,7 +82,7 @@ export function CentersListPage() {
       }
       return true;
     });
-  }, [search, centers, filters]);
+  }, [centers, filters]);
 
   function openCreate() {
     setSheet({ open: true, mode: 'create' });
@@ -121,24 +144,65 @@ export function CentersListPage() {
           <Plus className="h-4 w-4" />
           Nueva academia
         </Button>
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Nombre, dirección, teléfono..."
-            className="pl-9 bg-muted"
-            aria-label="Buscar academias"
-          />
-        </div>
       </div>
 
       <FilterBar hasActive={hasActiveFilters} onClear={clearFilters}>
+        <FilterField label="Buscador">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.search}
+            onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+            placeholder="Nombre, dirección, teléfono..."
+            aria-label="Buscador general"
+          />
+        </FilterField>
+
+        <FilterField label="Nombre">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.name}
+            onChange={(e) => setFilters((f) => ({ ...f, name: e.target.value }))}
+            aria-label="Filtrar por nombre"
+          />
+        </FilterField>
+
+        <FilterField label="Identificador URL">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.slug}
+            onChange={(e) => setFilters((f) => ({ ...f, slug: e.target.value }))}
+            aria-label="Filtrar por identificador URL"
+          />
+        </FilterField>
+
+        <FilterField label="Dirección">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.address}
+            onChange={(e) => setFilters((f) => ({ ...f, address: e.target.value }))}
+            aria-label="Filtrar por dirección"
+          />
+        </FilterField>
+
+        <FilterField label="Teléfono">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.phone}
+            onChange={(e) => setFilters((f) => ({ ...f, phone: e.target.value }))}
+            aria-label="Filtrar por teléfono"
+          />
+        </FilterField>
+
         <FilterField label="Estado">
           <select
             className={filterSelectClass}
             value={filters.status}
-            onChange={(e) => setFilters({ status: e.target.value as StatusFilter })}
+            onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value as StatusFilter }))}
             aria-label="Filtrar por estado"
           >
             <option value="any">Cualquiera</option>

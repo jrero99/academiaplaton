@@ -29,6 +29,7 @@ import {
   toIsoDate,
 } from '@/features/sessions/lib/week';
 import { cn } from '@/lib/utils';
+import { useCurrentUser } from '@/contexts/AuthContext';
 
 // Listado activo de academias (centros). Mientras no haya backend wired,
 // viene de mock-centers. Filtramos inactivas para no permitir crear
@@ -61,7 +62,19 @@ function detectConflict(
 }
 
 export function CalendarPage() {
-  const [centerId, setCenterId] = useState<string>(CENTERS[0]!.id);
+  const currentUser = useCurrentUser();
+  const isTeacher = currentUser.role === 'teacher';
+  const canEdit = !isTeacher;
+
+  // Centros que puede ver: admin todos; los demás roles, sólo el suyo.
+  const accessibleCenters = useMemo(() => {
+    if (currentUser.role === 'admin') return CENTERS;
+    return CENTERS.filter((c) => c.id === currentUser.centerId);
+  }, [currentUser]);
+
+  const [centerId, setCenterId] = useState<string>(
+    accessibleCenters[0]?.id ?? CENTERS[0]!.id,
+  );
   const [viewMode, setViewMode] = useState<ViewMode>('week');
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [sessions, setSessions] = useState<SessionDto[]>(MOCK_SESSIONS);
@@ -79,29 +92,34 @@ export function CalendarPage() {
     [centerId],
   );
 
-  // Sesiones visibles según el modo y el centro
+  // Sesiones visibles según el modo y el centro. Para profesores
+  // filtramos además por su propio teacherId — sólo ven sus clases.
   const visibleSessions = useMemo(() => {
+    const inCenterAndTeacher = (s: SessionDto) =>
+      s.centerId === centerId &&
+      (!isTeacher || s.teacherId === currentUser.teacherId);
+
     if (viewMode === 'week') {
       const startIso = toIsoDate(weekStart);
       const endIso = toIsoDate(addDays(weekStart, WEEK_DAYS));
       return sessions.filter(
-        (s) => s.centerId === centerId && s.date >= startIso && s.date < endIso,
+        (s) => inCenterAndTeacher(s) && s.date >= startIso && s.date < endIso,
       );
     }
     if (viewMode === 'month') {
       const startIso = toIsoDate(monthGridStart);
       const endIso = toIsoDate(addDays(monthGridStart, monthRowCount * 7));
       return sessions.filter(
-        (s) => s.centerId === centerId && s.date >= startIso && s.date < endIso,
+        (s) => inCenterAndTeacher(s) && s.date >= startIso && s.date < endIso,
       );
     }
     // year
     const startIso = toIsoDate(new Date(year, 0, 1));
     const endIso = toIsoDate(new Date(year + 1, 0, 1));
     return sessions.filter(
-      (s) => s.centerId === centerId && s.date >= startIso && s.date < endIso,
+      (s) => inCenterAndTeacher(s) && s.date >= startIso && s.date < endIso,
     );
-  }, [sessions, centerId, viewMode, weekStart, monthGridStart, monthRowCount, year]);
+  }, [sessions, centerId, viewMode, weekStart, monthGridStart, monthRowCount, year, isTeacher, currentUser.teacherId]);
 
   // Navegación dependiente del modo
   function goPrev() {
@@ -131,11 +149,13 @@ export function CalendarPage() {
   }
 
   function openCreate(date: string, startTime: string) {
+    if (!canEdit) return;
     setError(null);
     setSheet({ open: true, mode: 'create', date, startTime });
   }
 
   function openEdit(session: SessionDto) {
+    if (!canEdit) return;
     setError(null);
     setSheet({ open: true, mode: 'edit', session });
   }
@@ -211,6 +231,7 @@ export function CalendarPage() {
   }
 
   function handleSessionDrop(args: { sessionId: string; date: string; startTime: string }) {
+    if (!canEdit) return;
     const current = sessions.find((s) => s.id === args.sessionId);
     if (!current) return;
 
@@ -283,18 +304,24 @@ export function CalendarPage() {
           <label htmlFor="calendar-center" className="text-sm font-medium text-muted-foreground">
             Centro
           </label>
-          <select
-            id="calendar-center"
-            value={centerId}
-            onChange={(e) => setCenterId(e.target.value)}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            {CENTERS.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          {accessibleCenters.length > 1 ? (
+            <select
+              id="calendar-center"
+              value={centerId}
+              onChange={(e) => setCenterId(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              {accessibleCenters.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span id="calendar-center" className="text-sm font-medium">
+              {accessibleCenters[0]?.name ?? '—'}
+            </span>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -335,7 +362,7 @@ export function CalendarPage() {
           <span className="ml-2 text-sm font-medium tabular-nums">{navLabel}</span>
         </div>
 
-        {viewMode === 'week' && (
+        {viewMode === 'week' && canEdit && (
           <Button
             onClick={() => openCreate(toIsoDate(weekStart), '18:00')}
             aria-label="Nueva sesión"
@@ -368,8 +395,9 @@ export function CalendarPage() {
             onSessionDrop={handleSessionDrop}
           />
           <p className="mt-3 text-xs text-muted-foreground">
-            Click en una celda vacía para crear una sesión. Click en un bloque para editarla o eliminarla.
-            Arrastra un bloque a otro slot para moverlo (snap a 15 min).
+            {isTeacher
+              ? 'Vista de sólo lectura: aquí ves únicamente las sesiones que tienes asignadas.'
+              : 'Click en una celda vacía para crear una sesión. Click en un bloque para editarla o eliminarla. Arrastra un bloque a otro slot para moverlo (snap a 15 min).'}
           </p>
         </>
       )}

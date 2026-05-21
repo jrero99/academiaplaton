@@ -1,8 +1,17 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation, Navigate } from 'react-router-dom';
 import { AdminSidebar } from './AdminSidebar';
 import { AdminTopbar } from './AdminTopbar';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function AdminLayout() {
+  const { currentUser } = useAuth();
+  const location = useLocation();
+
+  // Los profesores no tienen dashboard: aterrizan directamente en su calendario.
+  if (currentUser?.role === 'teacher' && location.pathname === '/admin') {
+    return <Navigate to="/admin/calendar" replace />;
+  }
+
   return (
     <div className="flex min-h-svh bg-muted/40">
       <AdminSidebar />

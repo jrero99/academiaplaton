@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Plus, Search, ArrowUpRight, Pencil, Trash2 } from 'lucide-react';
+import { Plus, ArrowUpRight, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -14,6 +13,7 @@ import { PageHeader } from '@/components/admin/PageHeader';
 import {
   FilterBar,
   FilterField,
+  filterInputClass,
   filterSelectClass,
 } from '@/components/admin/FilterBar';
 import { LeadStatusBadge } from '@/features/leads/components/LeadStatusBadge';
@@ -36,14 +36,29 @@ const dateFmt = new Intl.DateTimeFormat('es-ES', {
 });
 
 type FilterState = {
+  search: string;
+  firstName: string;
+  lastName: string;
+  email: string;
   status: LeadStatus | '';
   course: string;
 };
 
-const initialFilters: FilterState = { status: '', course: '' };
+const initialFilters: FilterState = {
+  search: '',
+  firstName: '',
+  lastName: '',
+  email: '',
+  status: '',
+  course: '',
+};
+
+function includesCi(haystack: string | null | undefined, needle: string): boolean {
+  if (!needle) return true;
+  return (haystack ?? '').toLowerCase().includes(needle.toLowerCase());
+}
 
 export function LeadsListPage() {
-  const [search, setSearch] = useState('');
   const [filters, setFilters] = useState<FilterState>(initialFilters);
 
   const courseOptions = useMemo(() => {
@@ -54,17 +69,28 @@ export function LeadsListPage() {
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'es'));
   }, []);
 
-  const hasActiveFilters = filters.status !== '' || filters.course !== '';
+  const hasActiveFilters =
+    filters.search !== '' ||
+    filters.firstName !== '' ||
+    filters.lastName !== '' ||
+    filters.email !== '' ||
+    filters.status !== '' ||
+    filters.course !== '';
 
   function clearFilters() {
     setFilters(initialFilters);
   }
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = filters.search.trim().toLowerCase();
     return MOCK_LEADS.filter((lead) => {
       if (filters.status && lead.status !== filters.status) return false;
       if (filters.course && lead.interestedCourse !== filters.course) return false;
+
+      if (!includesCi(lead.firstName, filters.firstName)) return false;
+      if (!includesCi(lead.lastName, filters.lastName)) return false;
+      if (!includesCi(lead.email, filters.email)) return false;
+
       if (q) {
         const hit = [lead.firstName, lead.lastName, lead.email, lead.interestedCourse]
           .filter(Boolean)
@@ -73,7 +99,7 @@ export function LeadsListPage() {
       }
       return true;
     });
-  }, [search, filters]);
+  }, [filters]);
 
   return (
     <>
@@ -87,18 +113,50 @@ export function LeadsListPage() {
           <Plus className="h-4 w-4" />
           Nuevo lead
         </Button>
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Nombre, email, curso..."
-            className="pl-9 bg-muted"
-          />
-        </div>
       </div>
 
       <FilterBar hasActive={hasActiveFilters} onClear={clearFilters}>
+        <FilterField label="Buscador">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.search}
+            onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+            placeholder="Nombre, email, curso..."
+            aria-label="Buscador general"
+          />
+        </FilterField>
+
+        <FilterField label="Nombre">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.firstName}
+            onChange={(e) => setFilters((f) => ({ ...f, firstName: e.target.value }))}
+            aria-label="Filtrar por nombre"
+          />
+        </FilterField>
+
+        <FilterField label="Apellidos">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.lastName}
+            onChange={(e) => setFilters((f) => ({ ...f, lastName: e.target.value }))}
+            aria-label="Filtrar por apellidos"
+          />
+        </FilterField>
+
+        <FilterField label="Email">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.email}
+            onChange={(e) => setFilters((f) => ({ ...f, email: e.target.value }))}
+            aria-label="Filtrar por email"
+          />
+        </FilterField>
+
         <FilterField label="Estado">
           <select
             className={filterSelectClass}

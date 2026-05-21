@@ -7,8 +7,9 @@
   "scripts": {
     "brief:front": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/brief-agent.ps1 -Agent front",
     "brief:back": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/brief-agent.ps1 -Agent back",
-    "dev:frontend": "pnpm run brief:front & pnpm --filter @academiaplaton/frontend dev",
-    "dev:backend": "pnpm run brief:back & pnpm --filter @academiaplaton/backend dev",
+    "brief:domain": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/brief-agent.ps1 -Agent domain",
+    "dev:frontend": "pnpm run brief:front & pnpm run brief:domain & pnpm --filter @academiaplaton/frontend dev",
+    "dev:backend": "pnpm run brief:back & pnpm run brief:domain & pnpm --filter @academiaplaton/backend dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",

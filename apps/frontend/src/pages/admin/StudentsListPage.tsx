@@ -18,6 +18,8 @@ import {
 } from '@/components/admin/FilterBar';
 import { MOCK_STUDENTS } from '@/features/students/data/mock-students';
 import { MOCK_CENTERS } from '@/features/centers/data/mock-centers';
+import { useCurrentUser } from '@/contexts/AuthContext';
+import { scopedCenterId } from '@/features/auth/lib/scope';
 import {
   StudentSheet,
   type StudentFormValues,
@@ -87,6 +89,9 @@ function includesCi(haystack: string | null | undefined, needle: string): boolea
 }
 
 export function StudentsListPage() {
+  const currentUser = useCurrentUser();
+  const scopedCenter = scopedCenterId(currentUser);
+
   const [students, setStudents] = useState<StudentDto[]>(MOCK_STUDENTS);
   const [filters, setFilters] = useState(initialFilters);
   const [sheet, setSheet] = useState<SheetState>({ open: false });
@@ -94,6 +99,12 @@ export function StudentsListPage() {
   const centerById = useMemo(
     () => new Map(MOCK_CENTERS.map((c) => [c.id, c])),
     [],
+  );
+
+  // Centros a los que tiene acceso el usuario: admin todos, manager solo el suyo.
+  const accessibleCenters = useMemo(
+    () => (scopedCenter === null ? MOCK_CENTERS : MOCK_CENTERS.filter((c) => c.id === scopedCenter)),
+    [scopedCenter],
   );
 
   const hasActiveFilters =
@@ -112,6 +123,7 @@ export function StudentsListPage() {
   const filtered = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
     return students.filter((s) => {
+      if (scopedCenter !== null && s.centerId !== scopedCenter) return false;
       if (filters.centerId && s.centerId !== filters.centerId) return false;
       if (filters.fee === 'none' && s.monthlyFee != null) return false;
       if (filters.fee === 'has' && s.monthlyFee == null) return false;
@@ -129,7 +141,7 @@ export function StudentsListPage() {
       }
       return true;
     });
-  }, [students, centerById, filters]);
+  }, [students, centerById, filters, scopedCenter]);
 
   function openCreate() {
     setSheet({ open: true, mode: 'create' });
@@ -241,19 +253,21 @@ export function StudentsListPage() {
           />
         </FilterField>
 
-        <FilterField label="Academia">
-          <select
-            className={filterSelectClass}
-            value={filters.centerId}
-            onChange={(e) => setFilters((f) => ({ ...f, centerId: e.target.value }))}
-            aria-label="Filtrar por academia"
-          >
-            <option value="">Todas</option>
-            {MOCK_CENTERS.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </FilterField>
+        {accessibleCenters.length > 1 && (
+          <FilterField label="Academia">
+            <select
+              className={filterSelectClass}
+              value={filters.centerId}
+              onChange={(e) => setFilters((f) => ({ ...f, centerId: e.target.value }))}
+              aria-label="Filtrar por academia"
+            >
+              <option value="">Todas</option>
+              {accessibleCenters.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </FilterField>
+        )}
 
         <FilterField label="Cuota">
           <select
@@ -346,7 +360,7 @@ export function StudentsListPage() {
         onOpenChange={(open) => { if (!open) closeSheet(); }}
         mode={sheet.open ? sheet.mode : 'create'}
         student={sheet.open && sheet.mode === 'edit' ? sheet.student : undefined}
-        centers={MOCK_CENTERS}
+        centers={accessibleCenters}
         onSubmit={handleSheetSubmit}
       />
     </>

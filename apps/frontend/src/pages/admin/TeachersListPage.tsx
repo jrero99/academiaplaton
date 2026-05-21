@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Plus, Search, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -15,12 +14,15 @@ import { PageHeader } from '@/components/admin/PageHeader';
 import {
   FilterBar,
   FilterField,
+  filterInputClass,
   filterSelectClass,
 } from '@/components/admin/FilterBar';
 import { MOCK_TEACHERS } from '@/features/teachers/data/mock-teachers';
 import { MOCK_CENTERS } from '@/features/centers/data/mock-centers';
 import { TeacherSheet } from '@/features/teachers/components/TeacherSheet';
 import type { Teacher } from '@/features/teachers/types';
+import { useCurrentUser } from '@/contexts/AuthContext';
+import { scopedCenterId } from '@/features/auth/lib/scope';
 
 const dateFmt = new Intl.DateTimeFormat('es-ES', {
   day: '2-digit',
@@ -38,13 +40,25 @@ type SheetState =
 type StatusFilter = 'any' | 'active' | 'inactive';
 
 const initialFilters = {
+  search: '',
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
   centerId: '',
   status: 'any' as StatusFilter,
 };
 
+function includesCi(haystack: string | null | undefined, needle: string): boolean {
+  if (!needle) return true;
+  return (haystack ?? '').toLowerCase().includes(needle.toLowerCase());
+}
+
 export function TeachersListPage() {
+  const currentUser = useCurrentUser();
+  const scopedCenter = scopedCenterId(currentUser);
+
   const [teachers, setTeachers] = useState<Teacher[]>(MOCK_TEACHERS);
-  const [search, setSearch] = useState('');
   const [filters, setFilters] = useState(initialFilters);
   const [sheet, setSheet] = useState<SheetState>({ open: false });
 
@@ -53,18 +67,37 @@ export function TeachersListPage() {
     [],
   );
 
-  const hasActiveFilters = filters.centerId !== '' || filters.status !== 'any';
+  const accessibleCenters = useMemo(
+    () => (scopedCenter === null ? MOCK_CENTERS : MOCK_CENTERS.filter((c) => c.id === scopedCenter)),
+    [scopedCenter],
+  );
+
+  const hasActiveFilters =
+    filters.search !== '' ||
+    filters.firstName !== '' ||
+    filters.lastName !== '' ||
+    filters.email !== '' ||
+    filters.phone !== '' ||
+    filters.centerId !== '' ||
+    filters.status !== 'any';
 
   function clearFilters() {
     setFilters(initialFilters);
   }
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = filters.search.trim().toLowerCase();
     return teachers.filter((t) => {
+      if (scopedCenter !== null && t.centerId !== scopedCenter) return false;
       if (filters.centerId && t.centerId !== filters.centerId) return false;
       if (filters.status === 'active' && !t.active) return false;
       if (filters.status === 'inactive' && t.active) return false;
+
+      if (!includesCi(t.firstName, filters.firstName)) return false;
+      if (!includesCi(t.lastName, filters.lastName)) return false;
+      if (!includesCi(t.email, filters.email)) return false;
+      if (!includesCi(t.phone, filters.phone)) return false;
+
       if (q) {
         const center = centerById.get(t.centerId);
         const hit = [t.firstName, t.lastName, t.email, t.phone ?? '', center?.name ?? '']
@@ -73,7 +106,7 @@ export function TeachersListPage() {
       }
       return true;
     });
-  }, [search, teachers, filters, centerById]);
+  }, [teachers, filters, centerById, scopedCenter]);
 
   function openCreate() {
     setSheet({ open: true, mode: 'create' });
@@ -121,32 +154,75 @@ export function TeachersListPage() {
           <Plus className="h-4 w-4" />
           Nuevo profesor
         </Button>
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Nombre, email, teléfono..."
-            className="pl-9 bg-muted"
-            aria-label="Buscar profesores"
-          />
-        </div>
       </div>
 
       <FilterBar hasActive={hasActiveFilters} onClear={clearFilters}>
-        <FilterField label="Academia">
-          <select
-            className={filterSelectClass}
-            value={filters.centerId}
-            onChange={(e) => setFilters((f) => ({ ...f, centerId: e.target.value }))}
-            aria-label="Filtrar por academia"
-          >
-            <option value="">Todas</option>
-            {MOCK_CENTERS.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+        <FilterField label="Buscador">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.search}
+            onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+            placeholder="Nombre, email, teléfono..."
+            aria-label="Buscador general"
+          />
         </FilterField>
+
+        <FilterField label="Nombre">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.firstName}
+            onChange={(e) => setFilters((f) => ({ ...f, firstName: e.target.value }))}
+            aria-label="Filtrar por nombre"
+          />
+        </FilterField>
+
+        <FilterField label="Apellidos">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.lastName}
+            onChange={(e) => setFilters((f) => ({ ...f, lastName: e.target.value }))}
+            aria-label="Filtrar por apellidos"
+          />
+        </FilterField>
+
+        <FilterField label="Email">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.email}
+            onChange={(e) => setFilters((f) => ({ ...f, email: e.target.value }))}
+            aria-label="Filtrar por email"
+          />
+        </FilterField>
+
+        <FilterField label="Teléfono">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.phone}
+            onChange={(e) => setFilters((f) => ({ ...f, phone: e.target.value }))}
+            aria-label="Filtrar por teléfono"
+          />
+        </FilterField>
+
+        {accessibleCenters.length > 1 && (
+          <FilterField label="Academia">
+            <select
+              className={filterSelectClass}
+              value={filters.centerId}
+              onChange={(e) => setFilters((f) => ({ ...f, centerId: e.target.value }))}
+              aria-label="Filtrar por academia"
+            >
+              <option value="">Todas</option>
+              {accessibleCenters.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </FilterField>
+        )}
 
         <FilterField label="Estado">
           <select
@@ -236,7 +312,7 @@ export function TeachersListPage() {
         onOpenChange={(open) => { if (!open) closeSheet(); }}
         mode={sheet.open ? sheet.mode : 'create'}
         teacher={sheet.open && sheet.mode === 'edit' ? sheet.teacher : undefined}
-        centers={MOCK_CENTERS}
+        centers={accessibleCenters}
         onSubmit={handleSheetSubmit}
       />
     </>

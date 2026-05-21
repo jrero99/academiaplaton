@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Plus, Search, Pencil, Trash2, Users } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -15,10 +14,13 @@ import { PageHeader } from '@/components/admin/PageHeader';
 import {
   FilterBar,
   FilterField,
+  filterInputClass,
   filterSelectClass,
 } from '@/components/admin/FilterBar';
 import { MOCK_CENTERS } from '@/features/centers/data/mock-centers';
 import { MOCK_GROUPS } from '@/features/groups/data/mock-groups';
+import { useCurrentUser } from '@/contexts/AuthContext';
+import { scopedCenterId } from '@/features/auth/lib/scope';
 import {
   GroupSheet,
   type GroupFormSubmit,
@@ -38,6 +40,9 @@ type SheetState =
 type StatusFilter = 'any' | 'active' | 'inactive';
 
 type FilterState = {
+  search: string;
+  name: string;
+  description: string;
   centerId: string;
   teacherId: string;
   status: StatusFilter;
@@ -45,17 +50,32 @@ type FilterState = {
 };
 
 const initialFilters: FilterState = {
+  search: '',
+  name: '',
+  description: '',
   centerId: '',
   teacherId: '',
   status: 'any',
   subject: '',
 };
 
+function includesCi(haystack: string | null | undefined, needle: string): boolean {
+  if (!needle) return true;
+  return (haystack ?? '').toLowerCase().includes(needle.toLowerCase());
+}
+
 export function GroupsListPage() {
+  const currentUser = useCurrentUser();
+  const scopedCenter = scopedCenterId(currentUser);
+
   const [groups, setGroups] = useState<GroupDto[]>(MOCK_GROUPS);
-  const [search, setSearch] = useState('');
   const [filters, setFilters] = useState<FilterState>(initialFilters);
   const [sheet, setSheet] = useState<SheetState>({ open: false });
+
+  const accessibleCenters = useMemo(
+    () => (scopedCenter === null ? MOCK_CENTERS : MOCK_CENTERS.filter((c) => c.id === scopedCenter)),
+    [scopedCenter],
+  );
 
   const teacherById = useMemo(
     () => new Map(MOCK_TEACHERS.map((t) => [t.id, t])),
@@ -71,6 +91,9 @@ export function GroupsListPage() {
   }, [groups]);
 
   const hasActiveFilters =
+    filters.search !== '' ||
+    filters.name !== '' ||
+    filters.description !== '' ||
     filters.centerId !== '' ||
     filters.teacherId !== '' ||
     filters.status !== 'any' ||
@@ -81,13 +104,18 @@ export function GroupsListPage() {
   }
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = filters.search.trim().toLowerCase();
     return groups.filter((g) => {
+      if (scopedCenter !== null && g.centerId !== scopedCenter) return false;
       if (filters.centerId && g.centerId !== filters.centerId) return false;
       if (filters.teacherId && g.teacherId !== filters.teacherId) return false;
       if (filters.status === 'active' && !g.active) return false;
       if (filters.status === 'inactive' && g.active) return false;
       if (filters.subject && g.subject !== filters.subject) return false;
+
+      if (!includesCi(g.name, filters.name)) return false;
+      if (!includesCi(g.description, filters.description)) return false;
+
       if (q) {
         const teacher = teacherById.get(g.teacherId);
         const teacherName = teacher ? `${teacher.firstName} ${teacher.lastName}` : '';
@@ -97,7 +125,7 @@ export function GroupsListPage() {
       }
       return true;
     });
-  }, [search, groups, teacherById, filters]);
+  }, [groups, teacherById, filters, scopedCenter]);
 
   function openCreate() {
     setSheet({ open: true, mode: 'create' });
@@ -170,32 +198,55 @@ export function GroupsListPage() {
           <Plus className="h-4 w-4" />
           Nuevo grupo
         </Button>
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Nombre, asignatura, descripción..."
-            className="pl-9 bg-muted"
-            aria-label="Buscar grupos"
-          />
-        </div>
       </div>
 
       <FilterBar hasActive={hasActiveFilters} onClear={clearFilters}>
-        <FilterField label="Academia">
-          <select
-            className={filterSelectClass}
-            value={filters.centerId}
-            onChange={(e) => setFilters((f) => ({ ...f, centerId: e.target.value }))}
-            aria-label="Filtrar por academia"
-          >
-            <option value="">Todas</option>
-            {MOCK_CENTERS.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+        <FilterField label="Buscador">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.search}
+            onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+            placeholder="Nombre, asignatura, descripción..."
+            aria-label="Buscador general"
+          />
         </FilterField>
+
+        <FilterField label="Grupo">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.name}
+            onChange={(e) => setFilters((f) => ({ ...f, name: e.target.value }))}
+            aria-label="Filtrar por nombre de grupo"
+          />
+        </FilterField>
+
+        <FilterField label="Descripción">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.description}
+            onChange={(e) => setFilters((f) => ({ ...f, description: e.target.value }))}
+            aria-label="Filtrar por descripción"
+          />
+        </FilterField>
+
+        {accessibleCenters.length > 1 && (
+          <FilterField label="Academia">
+            <select
+              className={filterSelectClass}
+              value={filters.centerId}
+              onChange={(e) => setFilters((f) => ({ ...f, centerId: e.target.value }))}
+              aria-label="Filtrar por academia"
+            >
+              <option value="">Todas</option>
+              {accessibleCenters.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </FilterField>
+        )}
 
         <FilterField label="Asignatura">
           <select
@@ -323,8 +374,16 @@ export function GroupsListPage() {
         onOpenChange={(open) => { if (!open) closeSheet(); }}
         mode={sheet.open ? sheet.mode : 'create'}
         group={sheet.open && sheet.mode === 'edit' ? sheet.group : undefined}
-        teachers={MOCK_TEACHERS}
-        students={MOCK_STUDENTS}
+        teachers={
+          scopedCenter === null
+            ? MOCK_TEACHERS
+            : MOCK_TEACHERS.filter((t) => t.centerId === scopedCenter)
+        }
+        students={
+          scopedCenter === null
+            ? MOCK_STUDENTS
+            : MOCK_STUDENTS.filter((s) => s.centerId === scopedCenter)
+        }
         onSubmit={handleSheetSubmit}
       />
     </>

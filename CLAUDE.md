@@ -191,13 +191,43 @@ pnpm lint                          # eslint
 pnpm typecheck                     # tsc --noEmit
 ```
 
-## 7. Workflow esperado de Claude
+## 7. Workflow obligatorio de agentes
 
-- Al tocar el frontend, delega o invoca al agente **platonFront**.
-- Al escribir/revisar tests o auditar seguridad, delega al agente **platonTest**. Ojo: en multi-tenant, los tests de aislamiento entre orgs son críticos.
-- Antes de dar una tarea por completada en UI, levanta el dev server y verifica el flujo (golden path + un caso borde).
-- Cualquier endpoint nuevo: schema Zod compartido en `packages/shared` ANTES de implementar router/service. Y revisar que filtre por `organizationId`.
+Reglas concretas sobre cuándo invocar cada agente. Aplican salvo que el usuario diga lo contrario explícitamente. **Ante la duda, invocar.**
+
+### 7.a Briefings — primer paso de cualquier agente
+
+Cada agente lee sus briefings en `.claude/agent-state/` antes de tocar nada:
+
+- `briefing-front.md` — TODO/FIXME/HACK/XXX nuevos en `apps/frontend` + `packages/shared` desde el último briefing.
+- `briefing-back.md` — idem para `apps/backend` + `packages/shared`.
+- `briefing-domain.md` — commits recientes que tocan `apps/backend/prisma/schema.prisma`, `packages/shared/**` o `CLAUDE.md`. **Lo leen TODOS los agentes** (front, back, test, sec, qa) — y el flujo principal también — para no trabajar con un modelo de negocio desactualizado.
+
+Los briefings se regeneran al arrancar `pnpm dev:frontend` / `pnpm dev:backend`. Forzar regeneración manual: `pnpm brief:front` / `pnpm brief:back` / `pnpm brief:domain`.
+
+### 7.b Cuándo invocar a cada agente
+
+| Tipo de cambio | Agente |
+|---|---|
+| Componente, página, formulario, hook, contexto, layout o navegación en `apps/frontend/` | `platonFront` |
+| Endpoint, service, repo, schema Prisma, migración, evento n8n o middleware en `apps/backend/` | `platonBack` |
+| Cambio en `packages/shared/` (DTOs, Zod, errores) | Quien implemente la capa que lo usa primero (front o back) + actualización de briefing-domain |
+| Antes de declarar una UI "hecha" | `platonSecFront` para revisión de seguridad cliente |
+| Antes de declarar una feature "hecha" | `platonQA` para producir matriz de casos a verificar |
+| Tras `platonQA`, escribir y ejecutar los tests | `platonTest` (Vitest unit/integration + Cypress E2E + audit OWASP backend) |
+
+**Excepciones razonables (puedo hacerlo yo directamente)**:
+- Ediciones < 20 líneas en un único fichero sin cambio de patrón.
+- Fixes de typo, lint o formato.
+- Mocks puntuales y demos UI throwaway.
+
+### 7.c Reglas no negociables
+
+- Schema Zod compartido en `packages/shared` SIEMPRE antes de implementar router/service. `platonBack` bloquea PRs que no lo cumplan.
+- Toda query de dominio filtra por `organizationId`. `platonBack` y `platonTest` lo verifican.
 - No añadir dependencias sin justificar (peso, mantenimiento, alternativas nativas).
+- Antes de declarar UI hecha: arrancar dev server y verificar al menos golden path + un caso borde. Si no se puede abrir navegador, decirlo explícitamente.
+- Después de mergear cambios que tocan schema, shared o CLAUDE.md: ejecutar `pnpm brief:domain` (o esperar al próximo `pnpm dev:*`) para que el siguiente trabajo de cualquier agente arranque con el modelo actualizado.
 
 ## 8. Estado actual del proyecto
 

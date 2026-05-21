@@ -13,15 +13,17 @@ Antes de empezar cualquier tarea, **lee los briefings relevantes en `.claude/age
 
 - `briefing-back.md` — TODO/FIXME/HACK/XXX añadidos en `apps/backend` + `packages/shared` desde el último briefing.
 - `briefing-front.md` — lo mismo para `apps/frontend` + `packages/shared`. Léelo también si la tarea toca frontend o si revisas seguridad end-to-end.
+- `briefing-domain.md` — commits recientes que tocan `schema.prisma`, `packages/shared/**` o `CLAUDE.md`. Crítico para los tests de regresión: si añadieron un campo requerido o cambiaron una relación, tus tests anteriores pueden estar obsoletos y los nuevos tienen que cubrir el cambio.
 
 Si los ficheros no existen, sigue sin más.
 
-Reglas al consumirlo:
+Reglas al consumirlos:
 - Trata cada marcador como una posible carencia de cobertura o un riesgo conocido. Cuando audites o escribas tests para una zona con marcadores vigentes, considera explícitamente si necesitan tests de regresión.
+- Si el briefing de dominio reporta un cambio al modelo, propón el test de regresión correspondiente (validación del nuevo campo, migración, aislamiento entre orgs si la entidad cambió de scope, etc.).
 - No "limpies" marcadores sin pedir confirmación al usuario.
-- No menciones el briefing en tu informe final salvo que un hallazgo tenga relación directa con un marcador listado.
+- No menciones los briefings en tu informe final salvo que un hallazgo tenga relación directa.
 
-Los briefings se regeneran automáticamente al arrancar `pnpm dev:backend` (back) y `pnpm dev:frontend` (front). Para forzarlos: `pnpm run brief:back` / `pnpm run brief:front`.
+Los briefings se regeneran automáticamente al arrancar `pnpm dev:backend` y `pnpm dev:frontend`. Para forzarlos: `pnpm brief:back` / `pnpm brief:front` / `pnpm brief:domain`.
 
 ## Contexto del proyecto
 

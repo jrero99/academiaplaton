@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Plus, Search, Pencil, Trash2, FileText, Sparkles } from 'lucide-react';
+import { Plus, Pencil, Trash2, FileText, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -14,11 +13,14 @@ import { PageHeader } from '@/components/admin/PageHeader';
 import {
   FilterBar,
   FilterField,
+  filterInputClass,
   filterSelectClass,
 } from '@/components/admin/FilterBar';
 import { MOCK_INVOICES } from '@/features/billing/data/mock-invoices';
 import { MOCK_STUDENTS } from '@/features/students/data/mock-students';
 import { MOCK_CENTERS } from '@/features/centers/data/mock-centers';
+import { useCurrentUser } from '@/contexts/AuthContext';
+import { scopedCenterId } from '@/features/auth/lib/scope';
 import {
   InvoiceSheet,
   type InvoiceFormValues,
@@ -58,10 +60,19 @@ type SheetState =
   | { open: true; mode: 'edit'; invoice: InvoiceDto };
 
 const initialFilters = {
+  search: '',
+  number: '',
+  student: '',
+  concept: '',
   status: '' as '' | InvoiceStatus,
   periodMonth: '' as '' | string, // '' = todos
   periodYear: '' as '' | string,
 };
+
+function includesCi(haystack: string | null | undefined, needle: string): boolean {
+  if (!needle) return true;
+  return (haystack ?? '').toLowerCase().includes(needle.toLowerCase());
+}
 
 function buildInvoiceNumber(year: number, month: number, seq: number): string {
   return `${year}-${month.toString().padStart(2, '0')}-${seq.toString().padStart(4, '0')}`;
@@ -92,8 +103,10 @@ function formToInvoiceFields(data: InvoiceFormValues) {
 }
 
 export function InvoicesListPage() {
+  const currentUser = useCurrentUser();
+  const scopedCenter = scopedCenterId(currentUser);
+
   const [invoices, setInvoices] = useState<InvoiceDto[]>(MOCK_INVOICES);
-  const [search, setSearch] = useState('');
   const [filters, setFilters] = useState(initialFilters);
   const [sheet, setSheet] = useState<SheetState>({ open: false });
 
@@ -106,6 +119,12 @@ export function InvoicesListPage() {
     [],
   );
 
+  // Alumnos accesibles para el rol actual (admin todos, manager solo los de su centro).
+  const accessibleStudents = useMemo(
+    () => (scopedCenter === null ? MOCK_STUDENTS : MOCK_STUDENTS.filter((s) => s.centerId === scopedCenter)),
+    [scopedCenter],
+  );
+
   // Año actual y años visibles en los recibos (para el filtro).
   const availableYears = useMemo(() => {
     const set = new Set<number>([new Date().getFullYear()]);
@@ -114,29 +133,42 @@ export function InvoicesListPage() {
   }, [invoices]);
 
   const hasActiveFilters =
-    filters.status !== '' || filters.periodMonth !== '' || filters.periodYear !== '';
+    filters.search !== '' ||
+    filters.number !== '' ||
+    filters.student !== '' ||
+    filters.concept !== '' ||
+    filters.status !== '' ||
+    filters.periodMonth !== '' ||
+    filters.periodYear !== '';
 
   function clearFilters() {
     setFilters(initialFilters);
   }
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = filters.search.trim().toLowerCase();
     return invoices.filter((inv) => {
+      const student = studentById.get(inv.studentId);
+      // Scope por centro vía el alumno asociado al recibo.
+      if (scopedCenter !== null && (!student || student.centerId !== scopedCenter)) return false;
       if (filters.status && inv.status !== filters.status) return false;
       if (filters.periodMonth && inv.periodMonth !== Number(filters.periodMonth)) return false;
       if (filters.periodYear && inv.periodYear !== Number(filters.periodYear)) return false;
 
+      const studentName = student ? `${student.firstName} ${student.lastName}` : '';
+
+      if (!includesCi(inv.number, filters.number)) return false;
+      if (!includesCi(studentName, filters.student)) return false;
+      if (!includesCi(inv.concept, filters.concept)) return false;
+
       if (q) {
-        const student = studentById.get(inv.studentId);
-        const name = student ? `${student.firstName} ${student.lastName}` : '';
-        const hit = [inv.number, inv.concept, name]
+        const hit = [inv.number, inv.concept, studentName]
           .some((v) => v.toLowerCase().includes(q));
         if (!hit) return false;
       }
       return true;
     });
-  }, [invoices, search, filters, studentById]);
+  }, [invoices, filters, studentById, scopedCenter]);
 
   const filteredTotal = useMemo(
     () => filtered.reduce((acc, inv) => acc + Number(inv.amount), 0),
@@ -269,19 +301,50 @@ export function InvoicesListPage() {
             Generar recibos del mes
           </Button>
         </div>
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Nº, concepto, alumno..."
-            className="pl-9 bg-muted"
-            aria-label="Buscar recibos"
-          />
-        </div>
       </div>
 
       <FilterBar hasActive={hasActiveFilters} onClear={clearFilters}>
+        <FilterField label="Buscador">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.search}
+            onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+            placeholder="Nº, concepto, alumno..."
+            aria-label="Buscador general"
+          />
+        </FilterField>
+
+        <FilterField label="Nº recibo">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.number}
+            onChange={(e) => setFilters((f) => ({ ...f, number: e.target.value }))}
+            aria-label="Filtrar por número de recibo"
+          />
+        </FilterField>
+
+        <FilterField label="Alumno">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.student}
+            onChange={(e) => setFilters((f) => ({ ...f, student: e.target.value }))}
+            aria-label="Filtrar por alumno"
+          />
+        </FilterField>
+
+        <FilterField label="Concepto">
+          <input
+            type="text"
+            className={filterInputClass}
+            value={filters.concept}
+            onChange={(e) => setFilters((f) => ({ ...f, concept: e.target.value }))}
+            aria-label="Filtrar por concepto"
+          />
+        </FilterField>
+
         <FilterField label="Estado">
           <select
             className={filterSelectClass}
