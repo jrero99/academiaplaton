@@ -61,9 +61,8 @@ export function AdminTopbar() {
           <Menu className="h-5 w-5" />
         </Button>
 
-        {/* Spacer para empujar los controles a la derecha en desktop
-            (en desktop el sidebar ocupa la izquierda, no hace falta) */}
-        <div className="flex-1 lg:hidden" />
+        {/* Spacer para empujar los controles a la derecha */}
+        <div className="flex-1" />
 
         <div className="flex items-center gap-1 sm:gap-2">
           <Button variant="ghost" size="icon" aria-label="Notificaciones" className="min-h-11 min-w-11">
