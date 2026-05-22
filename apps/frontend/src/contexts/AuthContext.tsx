@@ -14,7 +14,9 @@ const STORAGE_KEY = 'plato.auth.currentUserId';
 
 interface AuthContextValue {
   currentUser: AuthUser | null;
-  login: (username: string, password: string) => { ok: true } | { ok: false; error: string };
+  // El error se devuelve como clave i18n (no como string traducido) para que el
+  // consumidor lo traduzca al idioma actual. Desacopla auth del idioma.
+  login: (username: string, password: string) => { ok: true } | { ok: false; errorKey: string };
   logout: () => void;
 }
 
@@ -42,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const normalized = username.trim().toLowerCase();
     const user = MOCK_USERS.find((u) => u.username.toLowerCase() === normalized);
     if (!user || user.password !== password) {
-      return { ok: false as const, error: 'Usuario o contraseña incorrectos' };
+      return { ok: false as const, errorKey: 'login.invalid_credentials' };
     }
     setCurrentUser(user);
     return { ok: true as const };

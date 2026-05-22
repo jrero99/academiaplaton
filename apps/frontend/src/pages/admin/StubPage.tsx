@@ -1,22 +1,28 @@
 import { Construction } from 'lucide-react';
 import { PageHeader } from '@/components/admin/PageHeader';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface Props {
-  title: string;
+  // Alternativas: literal o clave i18n. App.tsx pasa titleKey;
+  // callers antiguos pueden seguir usando title.
+  title?: string;
+  titleKey?: string;
 }
 
-export function StubPage({ title }: Props) {
+export function StubPage({ title, titleKey }: Props) {
+  const { t } = useTranslation();
+  const resolved = titleKey ? t(titleKey) : (title ?? '');
   return (
     <>
       <PageHeader
-        title={title}
-        breadcrumbs={[{ label: 'Admin', to: '/admin' }, { label: title }]}
+        title={resolved}
+        breadcrumbs={[{ label: t('breadcrumb.admin'), to: '/admin' }, { label: resolved }]}
       />
       <div className="rounded-lg border bg-card shadow-sm p-12 flex flex-col items-center justify-center text-center gap-3">
         <Construction className="h-10 w-10 text-muted-foreground" />
-        <p className="text-lg font-medium">{title}</p>
+        <p className="text-lg font-medium">{resolved}</p>
         <p className="text-sm text-muted-foreground max-w-md">
-          Esta sección aún no está implementada. Cuando definamos el flujo, la montamos.
+          {t('stub.empty_text')}
         </p>
       </div>
     </>

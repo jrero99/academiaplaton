@@ -1,9 +1,11 @@
 import { Users, UserPlus, GraduationCap, TrendingUp } from 'lucide-react';
 import { PageHeader } from '@/components/admin/PageHeader';
+import { useTranslation } from '@/contexts/LanguageContext';
 import { MOCK_LEADS } from '@/features/leads/data/mock-leads';
 import { MOCK_STUDENTS } from '@/features/students/data/mock-students';
 
 export function AdminDashboardPage() {
+  const { t } = useTranslation();
   const newLeads = MOCK_LEADS.filter((l) => l.status === 'new').length;
   const inPipeline = MOCK_LEADS.filter((l) =>
     ['contacted', 'visit_scheduled', 'trial_class'].includes(l.status),
@@ -13,19 +15,19 @@ export function AdminDashboardPage() {
   return (
     <>
       <PageHeader
-        title="Dashboard"
-        breadcrumbs={[{ label: 'Admin', to: '/admin' }, { label: 'Dashboard' }]}
+        title={t('dashboard.title')}
+        breadcrumbs={[{ label: t('breadcrumb.admin'), to: '/admin' }, { label: t('dashboard.title') }]}
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Stat icon={UserPlus} label="Leads nuevos" value={newLeads} />
-        <Stat icon={Users} label="En pipeline" value={inPipeline} />
-        <Stat icon={TrendingUp} label="Convertidos" value={converted} />
-        <Stat icon={GraduationCap} label="Alumnos activos" value={MOCK_STUDENTS.length} />
+        <Stat icon={UserPlus} label={t('dashboard.leads_new')} value={newLeads} />
+        <Stat icon={Users} label={t('dashboard.in_pipeline')} value={inPipeline} />
+        <Stat icon={TrendingUp} label={t('dashboard.converted')} value={converted} />
+        <Stat icon={GraduationCap} label={t('dashboard.students_active')} value={MOCK_STUDENTS.length} />
       </div>
 
       <div className="rounded-lg border bg-card shadow-sm p-6 text-sm text-muted-foreground">
-        <p>Datos mock. Aquí irán los gráficos cuando conectemos al backend.</p>
+        <p>{t('dashboard.mock_note')}</p>
       </div>
     </>
   );

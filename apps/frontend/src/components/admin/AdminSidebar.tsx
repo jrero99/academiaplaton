@@ -3,7 +3,8 @@ import { LogOut } from 'lucide-react';
 import platoLogo from '@/assets/logo/plato-logo.svg';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-import { roleSubline } from '@/features/auth/lib/role-labels';
+import { useRoleSubline } from '@/features/auth/lib/role-labels';
+import { useTranslation } from '@/contexts/LanguageContext';
 import {
   MAIN_NAV_ITEMS,
   SETTINGS_NAV_ITEMS,
@@ -15,6 +16,8 @@ import {
 export function AdminSidebar() {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
+  const subline = useRoleSubline(currentUser?.roles ?? []);
+  const { t } = useTranslation();
 
   if (!currentUser) return null;
 
@@ -56,7 +59,7 @@ export function AdminSidebar() {
             {currentUser.firstName} {currentUser.lastName}
           </p>
           <p className="text-xs text-zinc-500 truncate">
-            {roleSubline(currentUser.roles)} · @{currentUser.username}
+            {subline} · @{currentUser.username}
           </p>
         </div>
         <button
@@ -73,10 +76,11 @@ export function AdminSidebar() {
 }
 
 export function AdminNavGroup({ items, onNavClick }: { items: NavItem[]; onNavClick?: () => void }) {
+  const { t } = useTranslation();
   return (
     <ul className="space-y-1">
       {items.map((item) => (
-        <li key={item.to + item.label}>
+        <li key={item.to + item.labelKey}>
           <NavLink
             to={item.to}
             end={item.to === '/admin'}
@@ -91,7 +95,7 @@ export function AdminNavGroup({ items, onNavClick }: { items: NavItem[]; onNavCl
             }
           >
             <item.icon className="h-4 w-4 shrink-0" />
-            <span>{item.label}</span>
+            <span>{t(item.labelKey)}</span>
           </NavLink>
         </li>
       ))}

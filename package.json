@@ -2,7 +2,7 @@
   "name": "academiaplaton",
   "private": true,
   "version": "0.0.0",
-  "description": "CRM de Academia Platón — leads, alumnos, recibos y horarios.",
+  "description": "CRM de Centre d'estudis Plató — leads, alumnos, recibos y horarios.",
   "packageManager": "pnpm@9.12.0",
   "scripts": {
     "brief:front": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/brief-agent.ps1 -Agent front",

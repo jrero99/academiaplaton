@@ -7,16 +7,12 @@ import platoLogo from '@/assets/logo/plato-logo.svg';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/contexts/LanguageContext';
 import { MOCK_USERS } from '@/features/auth/data/mock-users';
 import { MOCK_CENTERS } from '@/features/centers/data/mock-centers';
-import { ROLE_LABELS, roleLabels } from '@/features/auth/lib/role-labels';
+import { useRoleLabels } from '@/features/auth/lib/role-labels';
 import type { AuthUser, UserRole } from '@/features/auth/types';
-
-const loginSchema = z.object({
-  username: z.string().min(1, 'Introduce el usuario'),
-  password: z.string().min(1, 'Introduce la contraseña'),
-});
-type LoginFormValues = z.infer<typeof loginSchema>;
+import { LanguageSwitcher } from '@/components/admin/LanguageSwitcher';
 
 interface LocationState {
   from?: string;
@@ -29,6 +25,19 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [error, setError] = useState<string | null>(null);
+  const roleLabelMap = useRoleLabels();
+  const { t } = useTranslation();
+
+  // Schema dependiente del idioma para que los mensajes salgan traducidos.
+  const loginSchema = useMemo(
+    () =>
+      z.object({
+        username: z.string().min(1, t('login.username_required')),
+        password: z.string().min(1, t('login.password_required')),
+      }),
+    [t],
+  );
+  type LoginFormValues = z.infer<typeof loginSchema>;
 
   const {
     register,
@@ -69,7 +78,7 @@ export function LoginPage() {
   function onSubmit(data: LoginFormValues) {
     const result = login(data.username, data.password);
     if (!result.ok) {
-      setError(result.error);
+      setError(t(result.errorKey));
       return;
     }
     const from = (location.state as LocationState | null)?.from ?? '/admin';
@@ -87,8 +96,9 @@ export function LoginPage() {
       <div className="w-full max-w-4xl grid gap-6 lg:grid-cols-[minmax(0,360px)_1fr]">
         {/* Form */}
         <div className="rounded-lg border bg-card shadow-sm overflow-hidden self-start">
-          <div className="flex items-center justify-center bg-white border-b py-8">
-            <img src={platoLogo} alt="Plató" className="h-14 w-auto" />
+          <div className="flex items-center justify-between bg-white border-b py-8 px-6">
+            <img src={platoLogo} alt={t('app.name')} className="h-14 w-auto" />
+            <LanguageSwitcher />
           </div>
 
           <form
@@ -98,7 +108,7 @@ export function LoginPage() {
           >
             <div className="flex flex-col gap-1.5">
               <label htmlFor="login-username" className="text-sm font-medium">
-                Usuario
+                {t('login.username')}
               </label>
               <Input
                 id="login-username"
@@ -116,7 +126,7 @@ export function LoginPage() {
 
             <div className="flex flex-col gap-1.5">
               <label htmlFor="login-password" className="text-sm font-medium">
-                Contraseña
+                {t('login.password')}
               </label>
               <Input
                 id="login-password"
@@ -142,17 +152,18 @@ export function LoginPage() {
             )}
 
             <Button type="submit" disabled={isSubmitting} className="mt-2 h-11 sm:h-9">
-              Entrar
+              {t('login.submit')}
             </Button>
           </form>
         </div>
 
         {/* Cuentas demo */}
         <div className="rounded-lg border bg-card shadow-sm p-6">
-          <h2 className="text-sm font-semibold">Cuentas demo</h2>
+          <h2 className="text-sm font-semibold">{t('login.demo_title')}</h2>
           <p className="text-xs text-muted-foreground mt-1">
-            Haz click en cualquier usuario para autocompletar el formulario.
-            Todas las contraseñas son <span className="font-mono">1234</span>.
+            {t('login.demo_help_prefix')}
+            <span className="font-mono">{t('login.demo_help_password')}</span>
+            {t('login.demo_help_suffix')}
           </p>
 
           <div className="mt-4 space-y-5">
@@ -162,7 +173,7 @@ export function LoginPage() {
               return (
                 <section key={role}>
                   <h3 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
-                    {ROLE_LABELS[role]}
+                    {roleLabelMap[role]}
                   </h3>
                   <ul className="grid gap-1.5 sm:grid-cols-2">
                     {users.map((u) => {
@@ -172,7 +183,7 @@ export function LoginPage() {
                       // Mostrar todos los roles si el usuario tiene más de uno
                       const rolesLabel =
                         u.roles.length > 1
-                          ? roleLabels(u.roles).join(' + ')
+                          ? u.roles.map((r) => roleLabelMap[r]).join(' + ')
                           : null;
                       return (
                         <li key={u.id}>
