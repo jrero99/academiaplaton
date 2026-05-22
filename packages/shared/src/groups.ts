@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ClassTypeSchema } from './scheduling.js';
 
 export const GroupCreateSchema = z.object({
   centerId: z.string().uuid(),
@@ -8,6 +9,8 @@ export const GroupCreateSchema = z.object({
   description: z.string().max(240).optional(),
   active: z.boolean().default(true),
   notes: z.string().max(2000).optional(),
+  classType: ClassTypeSchema,
+  capacityOverride: z.number().int().min(1).max(255).optional(),
   studentIds: z.array(z.string().uuid()).max(100).default([]),
 });
 export type GroupCreate = z.infer<typeof GroupCreateSchema>;
@@ -25,6 +28,8 @@ export const GroupDtoSchema = z.object({
   description: z.string().optional(),
   active: z.boolean(),
   notes: z.string().optional(),
+  classType: ClassTypeSchema,
+  capacityOverride: z.number().int().min(1).max(255).optional(),
   studentIds: z.array(z.string().uuid()),
   studentCount: z.number().int().min(0),
   createdAt: z.string().datetime(),

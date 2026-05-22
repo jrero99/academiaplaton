@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { AlertTriangle, Trash2 } from 'lucide-react';
+import { AlertTriangle, ClipboardList, Trash2 } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -46,6 +46,9 @@ interface Props {
   existingSessions: SessionDto[];
   onSubmit: (data: SessionFormValues) => void;
   onDelete?: (id: string) => void;
+  // Si se proporciona, en modo edit aparece un botón "Pasar lista" en el header
+  // que cierra esta sheet y abre la de asistencia para la sesión actual.
+  onTakeAttendance?: () => void;
 }
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -330,6 +333,7 @@ export function SessionSheet({
   existingSessions,
   onSubmit,
   onDelete,
+  onTakeAttendance,
 }: Props) {
   function handleSubmit(data: SessionFormValues) {
     onSubmit(data);
@@ -354,6 +358,18 @@ export function SessionSheet({
               ? 'Asigna un grupo a una franja horaria del calendario.'
               : 'Modifica los datos de la sesión o elimínala.'}
           </SheetDescription>
+          {mode === 'edit' && onTakeAttendance && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onTakeAttendance}
+              className="self-start mt-2"
+            >
+              <ClipboardList className="h-4 w-4" />
+              Pasar lista
+            </Button>
+          )}
         </SheetHeader>
 
         <SessionForm

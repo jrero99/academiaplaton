@@ -156,6 +156,7 @@ export function GroupsListPage() {
         notes: data.notes || undefined,
         studentIds: data.studentIds,
         studentCount: data.studentIds.length,
+        classType: 'GRUPAL',
         createdAt: now,
         updatedAt: now,
       };

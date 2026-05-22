@@ -18,6 +18,7 @@ import {
 import type { Teacher } from '@/features/teachers/types';
 import type { ClockEntry } from '../types';
 import { formatDuration, formatTime, entriesForRange } from '../lib/clocking';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface Props {
   entries: ClockEntry[];
@@ -39,13 +40,14 @@ function teacherInitials(firstName: string, lastName: string): string {
   return `${firstName.charAt(0)}${parts[0]?.charAt(0) ?? ''}`.toUpperCase();
 }
 
-const dateFmt = new Intl.DateTimeFormat('es-ES', {
-  day: '2-digit',
-  month: '2-digit',
-  year: 'numeric',
-});
-
 export function AdminClockingControl({ entries, teachers }: Props) {
+  const { t, locale } = useTranslation();
+
+  const dateFmt = useMemo(
+    () => new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', year: 'numeric' }),
+    [locale],
+  );
+
   // Los defaults se calculan una sola vez en el montaje del componente.
   const [initialFrom] = useState(getDefaultFrom);
   const [initialTo] = useState(getDefaultTo);
@@ -63,7 +65,7 @@ export function AdminClockingControl({ entries, teachers }: Props) {
   }, [hasOpenEntries]);
 
   const teacherById = useMemo(
-    () => new Map(teachers.map((t) => [t.id, t])),
+    () => new Map(teachers.map((teacher) => [teacher.id, teacher])),
     [teachers],
   );
 
@@ -72,7 +74,7 @@ export function AdminClockingControl({ entries, teachers }: Props) {
     const openIds = new Set(
       entries.filter((e) => e.clockOut === null).map((e) => e.teacherId),
     );
-    return teachers.filter((t) => openIds.has(t.id));
+    return teachers.filter((teacher) => openIds.has(teacher.id));
   }, [entries, teachers]);
 
   // Entradas del clockIn de cada uno para el panel "dentro ahora"
@@ -108,32 +110,33 @@ export function AdminClockingControl({ entries, teachers }: Props) {
     <div className="flex flex-col gap-6">
       {/* Panel "quién está dentro ahora" */}
       <div className="rounded-lg border bg-card shadow-sm p-4">
-        <p className="text-sm font-semibold mb-3">Dentro ahora</p>
+        <p className="text-sm font-semibold mb-3">{t('clocking.inside_now')}</p>
         {insideNow.length === 0 ? (
           <div className="flex items-center gap-2 text-muted-foreground text-sm">
             <UserX className="h-4 w-4 flex-shrink-0" />
-            <span>Nadie está fichado en este momento</span>
+            <span>{t('clocking.nobody_inside')}</span>
           </div>
         ) : (
           <div className="flex flex-wrap gap-2">
-            {insideNow.map((t) => {
-              const entry = openEntryByTeacher.get(t.id);
+            {insideNow.map((teacher) => {
+              const entry = openEntryByTeacher.get(teacher.id);
+              const sinceTime = entry ? formatTime(entry.clockIn) : t('clocking.since_unknown');
               return (
                 <div
-                  key={t.id}
-                  title={`Fichado desde ${entry ? formatTime(entry.clockIn) : ''}`}
-                  aria-label={`${t.firstName} ${t.lastName}, fichado desde ${entry ? formatTime(entry.clockIn) : 'hora desconocida'}`}
+                  key={teacher.id}
+                  title={t('clocking.tooltip_since', { time: sinceTime })}
+                  aria-label={t('clocking.aria_inside_since', { name: `${teacher.firstName} ${teacher.lastName}`, time: sinceTime })}
                   className="flex items-center gap-2 rounded-full border bg-primary/5 border-primary/20 px-3 py-1.5 text-sm cursor-default select-none"
                 >
                   <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold">
-                    {teacherInitials(t.firstName, t.lastName)}
+                    {teacherInitials(teacher.firstName, teacher.lastName)}
                   </span>
                   <span className="font-medium">
-                    {t.firstName} {t.lastName}
+                    {teacher.firstName} {teacher.lastName}
                   </span>
                   {entry && (
                     <span className="text-muted-foreground text-xs">
-                      desde {formatTime(entry.clockIn)}
+                      {t('clocking.since', { time: formatTime(entry.clockIn) })}
                     </span>
                   )}
                 </div>
@@ -145,39 +148,39 @@ export function AdminClockingControl({ entries, teachers }: Props) {
 
       {/* Filtros */}
       <FilterBar hasActive={hasActiveFilters} onClear={clearFilters}>
-        <FilterField label="Profesor">
+        <FilterField label={t('clocking.filter.teacher')}>
           <select
             className={filterSelectClass}
             value={teacherFilter}
             onChange={(e) => setTeacherFilter(e.target.value)}
-            aria-label="Filtrar por profesor"
+            aria-label={t('clocking.filter.teacher_aria')}
           >
-            <option value="">Todos</option>
-            {teachers.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.firstName} {t.lastName}
+            <option value="">{t('common.all_m')}</option>
+            {teachers.map((teacher) => (
+              <option key={teacher.id} value={teacher.id}>
+                {teacher.firstName} {teacher.lastName}
               </option>
             ))}
           </select>
         </FilterField>
 
-        <FilterField label="Desde">
+        <FilterField label={t('clocking.filter.from')}>
           <input
             type="date"
             className={filterInputClass}
             value={fromDate}
             onChange={(e) => setFromDate(e.target.value)}
-            aria-label="Fecha desde"
+            aria-label={t('clocking.filter.from_aria')}
           />
         </FilterField>
 
-        <FilterField label="Hasta">
+        <FilterField label={t('clocking.filter.to')}>
           <input
             type="date"
             className={filterInputClass}
             value={toDate}
             onChange={(e) => setToDate(e.target.value)}
-            aria-label="Fecha hasta"
+            aria-label={t('clocking.filter.to_aria')}
           />
         </FilterField>
       </FilterBar>
@@ -189,12 +192,12 @@ export function AdminClockingControl({ entries, teachers }: Props) {
             <TableHeader>
               <TableRow className="bg-muted hover:bg-muted">
                 <TableHead className="w-12 text-muted-foreground hidden sm:table-cell">#</TableHead>
-                <TableHead>Profesor</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Entrada</TableHead>
-                <TableHead>Salida</TableHead>
-                <TableHead>Duración</TableHead>
-                <TableHead className="hidden sm:table-cell">Estado</TableHead>
+                <TableHead>{t('clocking.col.teacher')}</TableHead>
+                <TableHead>{t('clocking.col.date')}</TableHead>
+                <TableHead>{t('clocking.col.clock_in')}</TableHead>
+                <TableHead>{t('clocking.col.clock_out')}</TableHead>
+                <TableHead>{t('clocking.col.duration')}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('common.status')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -204,7 +207,7 @@ export function AdminClockingControl({ entries, teachers }: Props) {
                     colSpan={7}
                     className="text-center text-muted-foreground py-8"
                   >
-                    No hay registros para los filtros seleccionados.
+                    {t('clocking.empty')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -228,7 +231,7 @@ export function AdminClockingControl({ entries, teachers }: Props) {
                         {formatTime(entry.clockIn)}
                       </TableCell>
                       <TableCell className="tabular-nums text-muted-foreground">
-                        {entry.clockOut ? formatTime(entry.clockOut) : '—'}
+                        {entry.clockOut ? formatTime(entry.clockOut) : t('common.dash')}
                       </TableCell>
                       <TableCell className="tabular-nums">
                         {formatDuration(entry.clockIn, entry.clockOut, nowMs)}
@@ -242,7 +245,7 @@ export function AdminClockingControl({ entries, teachers }: Props) {
                               : ''
                           }
                         >
-                          {isOpen ? 'En curso' : 'Completado'}
+                          {isOpen ? t('clocking.status.in_progress') : t('clocking.status.completed')}
                         </Badge>
                       </TableCell>
                     </TableRow>

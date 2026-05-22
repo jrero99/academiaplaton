@@ -21,6 +21,12 @@ function toDto(s: Session): SessionDto {
     startTime: s.startTime,
     endTime: s.endTime,
     notes: s.notes ?? undefined,
+    classTypeSnapshot: s.classTypeSnapshot,
+    rateSnapshot: s.rateSnapshot.toNumber(),
+    durationMinutes: s.durationMinutes,
+    status: s.status,
+    cancelledAt: s.cancelledAt != null ? s.cancelledAt.toISOString() : undefined,
+    cancelledReason: s.cancelledReason ?? undefined,
     createdAt: s.createdAt.toISOString(),
     updatedAt: s.updatedAt.toISOString(),
   };

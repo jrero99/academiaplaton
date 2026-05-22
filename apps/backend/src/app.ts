@@ -13,6 +13,10 @@ import { teachersRouter } from './modules/teachers/teachers.router.js';
 import { groupsRouter } from './modules/groups/groups.router.js';
 import { sessionsRouter } from './modules/sessions/sessions.router.js';
 import { sepaRouter } from './modules/billing/sepa.router.js';
+import {
+  groupAttendanceRouter,
+  sessionAttendanceRouter,
+} from './modules/attendance/attendance.router.js';
 
 export function createApp() {
   const app = express();
@@ -46,6 +50,14 @@ export function createApp() {
   app.use('/api/groups', groupsRouter);
   app.use('/api/sessions', sessionsRouter);
   app.use('/api/sepa-mandates', sepaRouter);
+
+  // Attendance: las rutas /:sessionId/attendance y /:groupId/attendance se
+  // montan sobre los mismos prefijos que sessions/groups para que Express
+  // resuelva el parámetro de ruta correctamente (mergeParams: true en los
+  // routers de attendance). Se mantienen en un módulo separado para no
+  // modificar sessions.router.ts ni groups.router.ts.
+  app.use('/api/sessions', sessionAttendanceRouter);
+  app.use('/api/groups', groupAttendanceRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

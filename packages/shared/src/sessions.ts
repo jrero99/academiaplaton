@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ClassTypeSchema, SessionStatusSchema } from './scheduling.js';
 
 export const TimeSchema = z
   .string()
@@ -51,6 +52,12 @@ export const SessionDtoSchema = z.object({
   startTime: TimeSchema,
   endTime: TimeSchema,
   notes: z.string().optional(),
+  classTypeSnapshot: ClassTypeSchema,
+  rateSnapshot: z.number(),
+  durationMinutes: z.number().int().min(1),
+  status: SessionStatusSchema,
+  cancelledAt: z.string().datetime().optional(),
+  cancelledReason: z.string().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });

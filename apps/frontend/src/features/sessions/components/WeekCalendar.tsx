@@ -8,6 +8,7 @@ import {
   timeToMinutes,
   toIsoDate,
 } from '../lib/week';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface Props {
   weekStart: Date; // lunes
@@ -31,22 +32,9 @@ const SLOT_HEIGHT_PX = 28;
 const HEADER_HEIGHT_PX = 56;
 const GUTTER_WIDTH_PX = 64;
 
-const DAY_LABELS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-
 // Reparte sesiones del mismo día en "lanes" cuando solapan en horario.
 // Sesiones con grupos y profesores distintos pueden coincidir a la misma hora
 // — en ese caso se renderizan lado a lado en lugar de unas encima de otras.
-//
-// Algoritmo clásico de overlap layout:
-//  1) Ordenar por startTime ASC, endTime ASC.
-//  2) Mantener un cluster activo (grupo de sesiones que solapan entre sí,
-//     directa o transitivamente). Cuando aparece una sesión cuyo startTime
-//     es >= al endTime máximo del cluster, se cierra el cluster y empieza
-//     uno nuevo.
-//  3) Dentro del cluster, cada sesión se coloca en la primera columna libre
-//     (cuya última sesión termina antes del startTime de la candidata) o se
-//     abre una nueva. El total de columnas del cluster = ancho que comparten
-//     todos sus miembros.
 function layoutOverlaps(
   sessions: SessionDto[],
 ): Map<string, { col: number; cols: number }> {
@@ -112,22 +100,33 @@ export function WeekCalendar({
   onSessionClick,
   onSessionDrop,
 }: Props) {
+  const { t, locale } = useTranslation();
   const startMin = startHour * 60;
   const endMin = endHour * 60;
   const slots = (endMin - startMin) / SLOT_MINUTES;
   const gridHeight = slots * SLOT_HEIGHT_PX;
   const [draggingId, setDraggingId] = useState<string | null>(null);
 
+  // Etiquetas de días adaptadas al locale activo (Lun, Mar... / Dl, Dt...)
+  const dayLabels = useMemo(() => {
+    const fmt = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(2000, 0, 3 + i); // lunes 3 ene 2000
+      const label = fmt.format(d);
+      return label.charAt(0).toUpperCase() + label.slice(1, 3);
+    });
+  }, [locale]);
+
   const groupById = useMemo(() => new Map(groups.map((g) => [g.id, g])), [groups]);
-  const teacherById = useMemo(() => new Map(teachers.map((t) => [t.id, t])), [teachers]);
+  const teacherById = useMemo(() => new Map(teachers.map((tch) => [tch.id, tch])), [teachers]);
 
   const days = useMemo(
     () =>
       Array.from({ length: dayCount }, (_, i) => {
         const d = addDays(weekStart, i);
-        return { date: d, iso: toIsoDate(d), label: DAY_LABELS[i] ?? '' };
+        return { date: d, iso: toIsoDate(d), label: dayLabels[i] ?? '' };
       }),
-    [weekStart, dayCount],
+    [weekStart, dayCount, dayLabels],
   );
 
   // Agrupar sesiones por iso de fecha
@@ -147,6 +146,10 @@ export function WeekCalendar({
     for (let h = startHour; h < endHour; h++) arr.push(h);
     return arr;
   }, [startHour, endHour]);
+
+  const createSessionLabel = t('calendar.new_session');
+  const sessionDeletedLabel = t('week_calendar.session_deleted');
+  const sessionFallbackLabel = t('week_calendar.session_label');
 
   return (
     <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
@@ -220,6 +223,9 @@ export function WeekCalendar({
               draggingId={draggingId}
               setDraggingId={setDraggingId}
               onSessionDrop={onSessionDrop}
+              createSessionLabel={createSessionLabel}
+              sessionDeletedLabel={sessionDeletedLabel}
+              sessionFallbackLabel={sessionFallbackLabel}
             />
           );
         })}
@@ -241,6 +247,9 @@ function DayColumn({
   draggingId,
   setDraggingId,
   onSessionDrop,
+  createSessionLabel,
+  sessionDeletedLabel,
+  sessionFallbackLabel,
 }: {
   dateIso: string;
   startMin: number;
@@ -254,6 +263,9 @@ function DayColumn({
   draggingId: string | null;
   setDraggingId: (id: string | null) => void;
   onSessionDrop?: (args: { sessionId: string; date: string; startTime: string }) => void;
+  createSessionLabel: string;
+  sessionDeletedLabel: string;
+  sessionFallbackLabel: string;
 }) {
   const slotsCount = (endMin - startMin) / SLOT_MINUTES;
   const [dragOverSlot, setDragOverSlot] = useState<number | null>(null);
@@ -306,7 +318,7 @@ function DayColumn({
             onDragOver={(e) => handleSlotDragOver(e, i)}
             onDragLeave={() => handleSlotDragLeave(i)}
             onDrop={(e) => handleSlotDrop(e, i)}
-            aria-label={`Crear sesión ${dateIso} ${minutesToTime(slotStartMin)}`}
+            aria-label={`${createSessionLabel} ${dateIso} ${minutesToTime(slotStartMin)}`}
             className={
               'absolute inset-x-0 transition-colors ' +
               (isDragOver ? 'bg-primary/15 ring-1 ring-inset ring-primary/40 ' : 'hover:bg-muted/40 ') +
@@ -371,10 +383,10 @@ function DayColumn({
               borderColor: color.border,
               color: color.text,
             }}
-            aria-label={`${group?.name ?? 'Sesión'} ${s.startTime}–${s.endTime}`}
+            aria-label={`${group?.name ?? sessionFallbackLabel} ${s.startTime}–${s.endTime}`}
           >
             <div className="text-[11px] font-semibold leading-tight truncate">
-              {group?.name ?? 'Grupo eliminado'}
+              {group?.name ?? sessionDeletedLabel}
             </div>
             {group?.subject && (
               <div className="text-[10px] opacity-80 leading-tight truncate">

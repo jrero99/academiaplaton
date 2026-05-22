@@ -13,9 +13,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { GroupDto } from '@academiaplaton/shared';
 import type { Teacher } from '@/features/teachers/types';
 import type { StudentDto } from '@academiaplaton/shared';
+import { GroupAttendanceHistoryPanel } from '@/features/attendance/components/GroupAttendanceHistoryPanel';
 
 const groupSchema = z.object({
   name: z.string().min(1, 'El nombre del grupo es obligatorio').max(120),
@@ -286,6 +288,7 @@ export function GroupSheet({
   }
 
   const formKey = mode === 'edit' && group ? group.id : 'create';
+  const showAttendanceTab = mode === 'edit' && !!group;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -299,15 +302,38 @@ export function GroupSheet({
           </SheetDescription>
         </SheetHeader>
 
-        <GroupForm
-          key={formKey}
-          mode={mode}
-          group={group}
-          teachers={teachers}
-          students={students}
-          onSubmit={handleSubmit}
-          onCancel={() => onOpenChange(false)}
-        />
+        {showAttendanceTab && group ? (
+          <Tabs defaultValue="data" className="px-6 pt-4">
+            <TabsList className="w-full">
+              <TabsTrigger value="data">Datos</TabsTrigger>
+              <TabsTrigger value="attendance">Asistencia</TabsTrigger>
+            </TabsList>
+            <TabsContent value="data" className="-mx-6">
+              <GroupForm
+                key={formKey}
+                mode={mode}
+                group={group}
+                teachers={teachers}
+                students={students}
+                onSubmit={handleSubmit}
+                onCancel={() => onOpenChange(false)}
+              />
+            </TabsContent>
+            <TabsContent value="attendance" className="px-0 pt-4 pb-6">
+              <GroupAttendanceHistoryPanel groupId={group.id} />
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <GroupForm
+            key={formKey}
+            mode={mode}
+            group={group}
+            teachers={teachers}
+            students={students}
+            onSubmit={handleSubmit}
+            onCancel={() => onOpenChange(false)}
+          />
+        )}
       </SheetContent>
     </Sheet>
   );

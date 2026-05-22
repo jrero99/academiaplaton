@@ -28,6 +28,9 @@ function s(
   teacherId: string,
   notes?: string,
 ): SessionDto {
+  const [sh, sm] = startTime.split(':').map(Number) as [number, number];
+  const [eh, em] = endTime.split(':').map(Number) as [number, number];
+  const durationMinutes = (eh * 60 + em) - (sh * 60 + sm);
   return {
     id,
     organizationId: ORG_ID,
@@ -38,6 +41,10 @@ function s(
     startTime,
     endTime,
     notes,
+    status: 'scheduled',
+    durationMinutes,
+    rateSnapshot: 0,
+    classTypeSnapshot: 'GRUPAL',
     createdAt: now,
     updatedAt: now,
   };

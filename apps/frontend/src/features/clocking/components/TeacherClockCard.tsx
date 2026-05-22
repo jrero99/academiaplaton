@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { LogIn, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,7 @@ import {
   formatTime,
   isSameDay,
 } from '../lib/clocking';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 type ClockOutState = 'idle' | 'confirming' | 'loading' | 'success';
 
@@ -22,22 +23,25 @@ interface Props {
   onClockOut: (entryId: string) => void;
 }
 
-const dateLong = new Intl.DateTimeFormat('es-ES', {
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-});
-
 export function TeacherClockCard({ entries, currentUser, onClockIn, onClockOut }: Props) {
+  const { t, locale } = useTranslation();
   const teacherId = currentUser.teacherId ?? '';
   const openEntry = getCurrentEntry(entries, teacherId);
   const clockedIn = isClockedIn(entries, teacherId);
 
+  const dateLong = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }),
+    [locale],
+  );
+
   // clockOutState se resetea a 'idle' implícitamente: cuando clockedIn pasa a false
-  // (porque el parent muता la entry) el estado 'confirming'/'loading' ya no tiene sentido.
-  // Para no llamar setState dentro de un effect, usamos un valor derivado en el render:
-  // si no está fichado, mostramos como si estuviéramos en 'idle'.
+  // (porque el parent muta la entry) el estado 'confirming'/'loading' ya no tiene sentido.
   const [clockOutState, setClockOutState] = useState<ClockOutState>('idle');
   // Marca de tiempo del render actual: se actualiza cada minuto para refrescar duraciones.
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -116,11 +120,11 @@ export function TeacherClockCard({ entries, currentUser, onClockIn, onClockOut }
         <div className="flex items-center gap-2">
           {clockedIn && openEntry ? (
             <Badge className="px-3 py-1 text-sm bg-primary/10 text-primary border-primary/20 hover:bg-primary/10">
-              Fichado dentro desde {formatTime(openEntry.clockIn)}
+              {t('clocking.card.clocked_in_since', { time: formatTime(openEntry.clockIn) })}
             </Badge>
           ) : (
             <Badge variant="secondary" className="px-3 py-1 text-sm">
-              No fichado
+              {t('clocking.card.not_clocked_in')}
             </Badge>
           )}
         </div>
@@ -129,10 +133,10 @@ export function TeacherClockCard({ entries, currentUser, onClockIn, onClockOut }
         {effectiveClockOutState === 'confirming' && openEntry && (
           <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 flex flex-col gap-3">
             <p className="text-sm font-medium text-destructive">
-              ¿Confirmas que quieres fichar la salida?
+              {t('clocking.card.confirm_clockout_question')}
             </p>
             <p className="text-xs text-muted-foreground">
-              Llevas dentro{' '}
+              {t('clocking.card.you_have_been_inside')}{' '}
               <strong>{formatDuration(openEntry.clockIn, null, nowMs)}</strong>
             </p>
             <div className="flex gap-2">
@@ -142,7 +146,7 @@ export function TeacherClockCard({ entries, currentUser, onClockIn, onClockOut }
                 className="h-10"
                 onClick={handleConfirmClockOut}
               >
-                Sí, fichar salida
+                {t('clocking.card.yes_clockout')}
               </Button>
               <Button
                 variant="ghost"
@@ -150,19 +154,21 @@ export function TeacherClockCard({ entries, currentUser, onClockIn, onClockOut }
                 className="h-10"
                 onClick={handleCancelClockOut}
               >
-                Cancelar
+                {t('clocking.card.cancel')}
               </Button>
             </div>
           </div>
         )}
 
         {effectiveClockOutState === 'loading' && (
-          <p className="text-sm text-muted-foreground">Registrando salida…</p>
+          <p className="text-sm text-muted-foreground">{t('clocking.card.registering_exit')}</p>
         )}
 
         {effectiveClockOutState === 'success' && (
           <div className="rounded-md border border-border bg-muted/50 p-3">
-            <p className="text-sm font-medium">Salida registrada a las {clockOutSuccessTime}</p>
+            <p className="text-sm font-medium">
+              {t('clocking.card.exit_registered_at', { time: clockOutSuccessTime })}
+            </p>
           </div>
         )}
 
@@ -174,20 +180,20 @@ export function TeacherClockCard({ entries, currentUser, onClockIn, onClockOut }
               variant={clockedIn ? 'outline' : 'default'}
               disabled={clockedIn}
               onClick={handleClockIn}
-              aria-label="Registrar entrada"
+              aria-label={t('clocking.card.aria_clockin')}
             >
               <LogIn className="h-5 w-5 mr-2" />
-              Entrada
+              {t('clocking.card.clockin_button')}
             </Button>
             <Button
               className="h-14 sm:h-12 text-base sm:text-sm font-semibold"
               variant={clockedIn ? 'destructive' : 'outline'}
               disabled={!clockedIn}
               onClick={handleRequestClockOut}
-              aria-label="Registrar salida"
+              aria-label={t('clocking.card.aria_clockout')}
             >
               <LogOut className="h-5 w-5 mr-2" />
-              Salida
+              {t('clocking.card.clockout_button')}
             </Button>
           </div>
         )}
@@ -196,17 +202,17 @@ export function TeacherClockCard({ entries, currentUser, onClockIn, onClockOut }
 
         {/* Historial de hoy */}
         <div className="flex flex-col gap-3">
-          <p className="text-sm font-semibold">Registro de hoy</p>
+          <p className="text-sm font-semibold">{t('clocking.card.today_log')}</p>
 
           {todayEntries.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Aún no has fichado hoy.</p>
+            <p className="text-sm text-muted-foreground">{t('clocking.card.not_clocked_today')}</p>
           ) : (
             <>
               <ul className="flex flex-col gap-1.5">
                 {todayEntries.map((e) => (
                   <li key={e.id} className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">
-                      {formatTime(e.clockIn)} — {e.clockOut ? formatTime(e.clockOut) : 'en curso'}
+                      {formatTime(e.clockIn)} — {e.clockOut ? formatTime(e.clockOut) : t('clocking.in_progress_short')}
                     </span>
                     <span className="font-medium tabular-nums">
                       {formatDuration(e.clockIn, e.clockOut, nowMs)}
@@ -215,7 +221,7 @@ export function TeacherClockCard({ entries, currentUser, onClockIn, onClockOut }
                 ))}
               </ul>
               <div className="flex items-center justify-between text-sm font-semibold border-t pt-2">
-                <span>Total hoy</span>
+                <span>{t('clocking.card.total_today')}</span>
                 <span className="tabular-nums">{todayTotalLabel}</span>
               </div>
             </>

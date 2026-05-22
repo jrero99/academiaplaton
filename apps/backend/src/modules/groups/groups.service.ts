@@ -20,6 +20,8 @@ function toDto(g: GroupWithStudents): GroupDto {
     description: g.description ?? undefined,
     active: g.active,
     notes: g.notes ?? undefined,
+    classType: g.classType,
+    capacityOverride: g.capacityOverride ?? undefined,
     studentIds: g.students.map((s) => s.studentId),
     studentCount: g.students.length,
     createdAt: g.createdAt.toISOString(),

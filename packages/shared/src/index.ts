@@ -6,6 +6,8 @@ export * from './students.js';
 export * from './teacher-colors.js';
 export * from './teachers.js';
 export * from './groups.js';
+export * from './scheduling.js';
 export * from './sessions.js';
 export * from './billing.js';
+export * from './attendance.js';
 export * from './errors.js';

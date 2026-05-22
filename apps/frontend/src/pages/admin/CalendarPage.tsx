@@ -31,6 +31,9 @@ import {
 import { cn } from '@/lib/utils';
 import { useCurrentUser } from '@/contexts/AuthContext';
 import { userHasRole, userCanActAsTeacher } from '@/features/auth/lib/permissions';
+import { useTranslation } from '@/contexts/LanguageContext';
+import { AttendanceSheet } from '@/features/attendance/components/AttendanceSheet';
+import { MOCK_STUDENTS } from '@/features/students/data/mock-students';
 
 // Listado activo de academias (centros). Mientras no haya backend wired,
 // viene de mock-centers. Filtramos inactivas para no permitir crear
@@ -63,6 +66,7 @@ function detectConflict(
 }
 
 export function CalendarPage() {
+  const { t } = useTranslation();
   const currentUser = useCurrentUser();
   // Un teacher puro ve solo sus sesiones (solo lectura).
   // Un admin/manager que también enseña (roles múltiples) puede editar.
@@ -84,6 +88,7 @@ export function CalendarPage() {
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [sessions, setSessions] = useState<SessionDto[]>(MOCK_SESSIONS);
   const [sheet, setSheet] = useState<SheetState>({ open: false });
+  const [attendanceSheet, setAttendanceSheet] = useState<{ open: boolean; session?: SessionDto }>({ open: false });
   const [error, setError] = useState<string | null>(null);
 
   // Usuarios multi-rol con vínculo a Teacher (admin+teacher, manager+teacher):
@@ -170,15 +175,31 @@ export function CalendarPage() {
   }
 
   function openEdit(session: SessionDto) {
+    // Si el usuario actúa como profesor titular de la sesión (teacher puro o
+    // multi-rol con vínculo a Teacher), el click abre "Pasar lista" en lugar
+    // del formulario de edición de sesión.
+    const isOwnSession =
+      userCanActAsTeacher(currentUser) && session.teacherId === currentUser.teacherId;
+    if (isOwnSession) {
+      setError(null);
+      setAttendanceSheet({ open: true, session });
+      return;
+    }
     if (!canEdit) return;
     setError(null);
     setSheet({ open: true, mode: 'edit', session });
   }
 
+  function openAttendance(session: SessionDto) {
+    setError(null);
+    setSheet({ open: false });
+    setAttendanceSheet({ open: true, session });
+  }
+
   function handleSubmit(data: SessionFormValues) {
     const group = centerGroups.find((g) => g.id === data.groupId);
     if (!group) {
-      setError('Grupo no encontrado en el centro seleccionado.');
+      setError(t('calendar.error.group_not_found'));
       return;
     }
 
@@ -194,9 +215,11 @@ export function CalendarPage() {
     const conflict = detectConflict(candidate, sessions);
     if (conflict) {
       const conflictGroup = MOCK_GROUPS.find((g) => g.id === conflict.groupId);
-      const reason = conflict.groupId === candidate.groupId ? 'grupo' : 'profesor';
+      const isGroupConflict = conflict.groupId === candidate.groupId;
       setError(
-        `Solapamiento con sesión del mismo ${reason} (${conflictGroup?.name ?? 'grupo'}, ${conflict.startTime}–${conflict.endTime} el ${conflict.date}).`,
+        isGroupConflict
+          ? t('calendar.error.overlap_group', { group: conflictGroup?.name ?? '', start: conflict.startTime, end: conflict.endTime, date: conflict.date })
+          : t('calendar.error.overlap_teacher', { group: conflictGroup?.name ?? '', start: conflict.startTime, end: conflict.endTime, date: conflict.date }),
       );
       return;
     }
@@ -222,6 +245,8 @@ export function CalendarPage() {
         ),
       );
     } else {
+      const [sh, sm] = data.startTime.split(':').map(Number) as [number, number];
+      const [eh, em] = data.endTime.split(':').map(Number) as [number, number];
       const newSession: SessionDto = {
         id: crypto.randomUUID(),
         organizationId: '00000000-0000-0000-0000-000000000001',
@@ -232,6 +257,10 @@ export function CalendarPage() {
         startTime: data.startTime,
         endTime: data.endTime,
         notes: data.notes || undefined,
+        status: 'scheduled',
+        durationMinutes: (eh * 60 + em) - (sh * 60 + sm),
+        rateSnapshot: 0,
+        classTypeSnapshot: 'GRUPAL',
         createdAt: now,
         updatedAt: now,
       };
@@ -257,9 +286,7 @@ export function CalendarPage() {
     if (current.date === args.date && current.startTime === args.startTime) return;
 
     if (newEndMin > 22 * 60) {
-      setError(
-        `No se puede mover: la sesión terminaría a las ${minutesToTime(newEndMin)}, fuera del rango del calendario.`,
-      );
+      setError(t('calendar.error.out_of_range', { time: minutesToTime(newEndMin) }));
       return;
     }
 
@@ -276,9 +303,11 @@ export function CalendarPage() {
     const conflict = detectConflict(candidate, sessions);
     if (conflict) {
       const conflictGroup = MOCK_GROUPS.find((g) => g.id === conflict.groupId);
-      const reason = conflict.groupId === candidate.groupId ? 'grupo' : 'profesor';
+      const isGroupConflict = conflict.groupId === candidate.groupId;
       setError(
-        `Solapamiento con sesión del mismo ${reason} (${conflictGroup?.name ?? 'grupo'}, ${conflict.startTime}–${conflict.endTime} el ${conflict.date}).`,
+        isGroupConflict
+          ? t('calendar.error.overlap_group', { group: conflictGroup?.name ?? '', start: conflict.startTime, end: conflict.endTime, date: conflict.date })
+          : t('calendar.error.overlap_teacher', { group: conflictGroup?.name ?? '', start: conflict.startTime, end: conflict.endTime, date: conflict.date }),
       );
       return;
     }
@@ -303,21 +332,21 @@ export function CalendarPage() {
         : formatYearLabel(currentDate);
 
   const prevAriaLabel =
-    viewMode === 'week' ? 'Semana anterior' : viewMode === 'month' ? 'Mes anterior' : 'Año anterior';
+    viewMode === 'week' ? t('calendar.prev_week') : viewMode === 'month' ? t('calendar.prev_month') : t('calendar.prev_year');
   const nextAriaLabel =
-    viewMode === 'week' ? 'Semana siguiente' : viewMode === 'month' ? 'Mes siguiente' : 'Año siguiente';
+    viewMode === 'week' ? t('calendar.next_week') : viewMode === 'month' ? t('calendar.next_month') : t('calendar.next_year');
 
   return (
     <>
       <PageHeader
-        title="Calendario"
-        breadcrumbs={[{ label: 'Admin', to: '/admin' }, { label: 'Calendario' }]}
+        title={t('calendar.title')}
+        breadcrumbs={[{ label: t('breadcrumb.admin'), to: '/admin' }, { label: t('calendar.title') }]}
       />
 
       <div className="flex flex-col gap-3 mb-4">
         <div className="flex items-center gap-2">
           <label htmlFor="calendar-center" className="text-sm font-medium text-muted-foreground">
-            Centro
+            {t('calendar.center_label')}
           </label>
           {accessibleCenters.length > 1 ? (
             <select
@@ -334,7 +363,7 @@ export function CalendarPage() {
             </select>
           ) : (
             <span id="calendar-center" className="text-sm font-medium">
-              {accessibleCenters[0]?.name ?? '—'}
+              {accessibleCenters[0]?.name ?? t('common.dash')}
             </span>
           )}
 
@@ -346,7 +375,7 @@ export function CalendarPage() {
                 onChange={(e) => setOnlyMine(e.target.checked)}
                 className="h-4 w-4 rounded border-input accent-primary"
               />
-              Solo mis clases
+              {t('calendar.only_mine')}
             </label>
           )}
         </div>
@@ -355,7 +384,7 @@ export function CalendarPage() {
           {/* Selector de vista */}
           <div
             role="group"
-            aria-label="Modo de vista"
+            aria-label={t('calendar.view_aria')}
             className="inline-flex items-center rounded-md border border-input bg-background p-0.5 shadow-sm"
           >
             {(['week', 'month', 'year'] as const).map((m) => (
@@ -371,7 +400,7 @@ export function CalendarPage() {
                     : 'text-muted-foreground hover:text-foreground',
                 )}
               >
-                {m === 'week' ? 'Semana' : m === 'month' ? 'Mes' : 'Año'}
+                {m === 'week' ? t('calendar.view.week') : m === 'month' ? t('calendar.view.month') : t('calendar.view.year')}
               </button>
             ))}
           </div>
@@ -381,7 +410,7 @@ export function CalendarPage() {
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="outline" onClick={goToday}>
-            Hoy
+            {t('calendar.today')}
           </Button>
           <Button variant="outline" size="icon" onClick={goNext} aria-label={nextAriaLabel}>
             <ChevronRight className="h-4 w-4" />
@@ -392,11 +421,11 @@ export function CalendarPage() {
         {viewMode === 'week' && canEdit && (
           <Button
             onClick={() => openCreate(toIsoDate(weekStart), '18:00')}
-            aria-label="Nueva sesión"
+            aria-label={t('calendar.new_session')}
             className="self-start"
           >
             <Plus className="h-4 w-4" />
-            Nueva sesión
+            {t('calendar.new_session')}
           </Button>
         )}
       </div>
@@ -412,7 +441,7 @@ export function CalendarPage() {
 
       {/* Aviso en pantallas muy pequeñas donde el calendario se desborda */}
       <p className="mb-3 text-xs text-muted-foreground sm:hidden">
-        Para una mejor experiencia, gira el dispositivo o usa una pantalla más grande.
+        {t('calendar.small_screen_hint')}
       </p>
 
       <div className="overflow-x-auto">
@@ -430,8 +459,10 @@ export function CalendarPage() {
             />
             <p className="mt-3 text-xs text-muted-foreground">
               {isOnlyTeacher
-                ? 'Vista de sólo lectura: aquí ves únicamente las sesiones que tienes asignadas.'
-                : 'Click en una celda vacía para crear una sesión. Click en un bloque para editarla o eliminarla. Arrastra un bloque a otro slot para moverlo (snap a 15 min).'}
+                ? t('calendar.week_hint_teacher')
+                : filterByOwnTeacher
+                  ? t('calendar.week_hint_own_filter')
+                  : t('calendar.week_hint_admin')}
             </p>
           </>
         )}
@@ -446,7 +477,7 @@ export function CalendarPage() {
               onDayClick={handleDayClick}
             />
             <p className="mt-3 text-xs text-muted-foreground">
-              Click en cualquier día para ir a la vista semanal correspondiente.
+              {t('calendar.month_hint')}
             </p>
           </>
         )}
@@ -460,8 +491,7 @@ export function CalendarPage() {
               onMonthClick={handleMonthClick}
             />
             <p className="mt-3 text-xs text-muted-foreground">
-              Intensidad por día = número de sesiones. Click en el título de un mes para abrirlo;
-              click en un día para ir a su semana.
+              {t('calendar.year_hint')}
             </p>
           </>
         )}
@@ -479,7 +509,37 @@ export function CalendarPage() {
         existingSessions={sessions.filter((s) => s.centerId === centerId)}
         onSubmit={handleSubmit}
         onDelete={handleDelete}
+        onTakeAttendance={
+          sheet.open && sheet.mode === 'edit'
+            ? () => openAttendance((sheet as { session: SessionDto }).session)
+            : undefined
+        }
       />
+
+      {attendanceSheet.open && attendanceSheet.session && (() => {
+        const s = attendanceSheet.session;
+        const group = MOCK_GROUPS.find((g) => g.id === s.groupId);
+        const teacher = MOCK_TEACHERS.find((t) => t.id === s.teacherId);
+        if (!group || !teacher) return null;
+        const groupStudents = MOCK_STUDENTS.filter((st) => group.studentIds.includes(st.id));
+        const canEditAttendance =
+          (userCanActAsTeacher(currentUser) && s.teacherId === currentUser.teacherId) ||
+          userHasRole(currentUser, 'admin') ||
+          userHasRole(currentUser, 'center_manager');
+        return (
+          <AttendanceSheet
+            key={s.id}
+            open={attendanceSheet.open}
+            onOpenChange={(open) => { if (!open) setAttendanceSheet({ open: false }); }}
+            session={s}
+            group={group}
+            teacher={teacher}
+            students={groupStudents}
+            readOnly={!canEditAttendance}
+            markedByUserId={currentUser.id}
+          />
+        );
+      })()}
     </>
   );
 }

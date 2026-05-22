@@ -11,8 +11,29 @@ datasource db {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tenancy
+// Enums — módulo attendance
 // ─────────────────────────────────────────────────────────────────────────────
+
+enum AttendanceStatus {
+  present
+  absent
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enums — módulo scheduling (tipo de clase y estado de sesión)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum ClassType {
+  PARTICULAR
+  SEMIPARTICULAR
+  GRUPAL
+}
+
+enum SessionStatus {
+  scheduled
+  completed
+  cancelled
+}
 
 enum UserRole {
   admin
@@ -51,6 +72,8 @@ model Organization {
   sessions     Session[]
   sepaMandates SepaMandate[]
   invoices     Invoice[]
+  attendances  Attendance[]
+  teacherRates TeacherRate[]
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -89,7 +112,8 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  memberships UserOrganization[]
+  memberships         UserOrganization[]
+  attendancesMarked   Attendance[]
 }
 
 model UserOrganization {
@@ -246,6 +270,7 @@ model Student {
   guardians    Guardian[]
   groups       GroupStudent[]
   invoices     Invoice[]
+  attendances  Attendance[]
 
   @@index([organizationId, centerId])
   @@index([organizationId, lastName, firstName])
@@ -394,15 +419,17 @@ model Guardian {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model Group {
-  id             String  @id @default(uuid()) @db.Char(36)
-  organizationId String  @db.Char(36)
-  centerId       String  @db.Char(36)
-  teacherId      String  @db.Char(36)
-  name           String  @db.VarChar(120)
-  subject        String? @db.VarChar(120)
-  description    String? @db.VarChar(240)
-  active         Boolean @default(true)
-  notes          String? @db.Text
+  id               String    @id @default(uuid()) @db.Char(36)
+  organizationId   String    @db.Char(36)
+  centerId         String    @db.Char(36)
+  teacherId        String    @db.Char(36)
+  name             String    @db.VarChar(120)
+  subject          String?   @db.VarChar(120)
+  description      String?   @db.VarChar(240)
+  active           Boolean   @default(true)
+  notes            String?   @db.Text
+  classType        ClassType
+  capacityOverride Int?      @db.UnsignedTinyInt
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -417,6 +444,7 @@ model Group {
   @@index([organizationId, centerId])
   @@index([organizationId, teacherId])
   @@index([organizationId, active])
+  @@index([organizationId, classType])
 }
 
 model GroupStudent {
@@ -441,15 +469,21 @@ model GroupStudent {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model Session {
-  id             String   @id @default(uuid()) @db.Char(36)
-  organizationId String   @db.Char(36)
-  centerId       String   @db.Char(36)
-  groupId        String   @db.Char(36)
-  teacherId      String   @db.Char(36)
-  date           DateTime @db.Date
-  startTime      String   @db.VarChar(5)
-  endTime        String   @db.VarChar(5)
-  notes          String?  @db.Text
+  id                String        @id @default(uuid()) @db.Char(36)
+  organizationId    String        @db.Char(36)
+  centerId          String        @db.Char(36)
+  groupId           String        @db.Char(36)
+  teacherId         String        @db.Char(36)
+  date              DateTime      @db.Date
+  startTime         String        @db.VarChar(5)
+  endTime           String        @db.VarChar(5)
+  notes             String?       @db.Text
+  classTypeSnapshot ClassType
+  rateSnapshot      Decimal       @db.Decimal(8, 4)
+  durationMinutes   Int           @db.UnsignedSmallInt
+  status            SessionStatus @default(scheduled)
+  cancelledAt       DateTime?
+  cancelledReason   String?       @db.VarChar(240)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -458,8 +492,71 @@ model Session {
   center       Center       @relation(fields: [centerId], references: [id], onDelete: Restrict)
   group        Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
   teacher      Teacher      @relation(fields: [teacherId], references: [id], onDelete: Restrict)
+  attendances  Attendance[]
 
   @@index([organizationId, centerId, date])
   @@index([organizationId, teacherId, date])
   @@index([organizationId, groupId, date])
+  @@index([organizationId, teacherId, status])
+  @@index([organizationId, date, status])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TeacherRate — tarifa por hora según tipo de clase, con histórico por fecha.
+// El lookup de tarifa vigente en la fecha de una sesión se hace con:
+//   validFrom <= sessionDate ORDER BY validFrom DESC LIMIT 1
+// Si no hay tarifa configurada para ese classType, el service rechaza con 400.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model TeacherRate {
+  id             String    @id @default(uuid()) @db.Char(36)
+  organizationId String    @db.Char(36)
+  classType      ClassType
+  ratePerHour    Decimal   @db.Decimal(8, 4)
+  validFrom      DateTime  @db.Date
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, classType, validFrom])
+  @@index([organizationId, classType, validFrom])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Attendance — registro de asistencia por (sesión, alumno)
+// La primera vez que se guarda la asistencia de una sesión se materializan
+// los registros de todos los alumnos del grupo en ese momento (snapshot).
+// Los alumnos inscritos DESPUÉS de la sesión no aparecen retroactivamente.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Attendance {
+  id             String           @id @default(uuid()) @db.Char(36)
+  organizationId String           @db.Char(36)
+  sessionId      String           @db.Char(36)
+  studentId      String           @db.Char(36)
+
+  status         AttendanceStatus @default(present)
+  justified      Boolean          @default(false)
+  // Solo significativo cuando status = absent y justified = true.
+  // Texto libre opcional; máx. 500 chars.
+  justification  String?          @db.VarChar(500)
+
+  markedAt       DateTime         @default(now())
+  // Quién marcó la asistencia. Nulo hasta que exista módulo auth real.
+  markedByUserId String?          @db.Char(36)
+
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  session        Session          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student        Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  // FK opcional a User (quién marcó). SetNull si el usuario es borrado.
+  markedBy       User?            @relation(fields: [markedByUserId], references: [id], onDelete: SetNull)
+
+  // Una sola marca por (sesión, alumno)
+  @@unique([sessionId, studentId])
+  @@index([organizationId, sessionId])
+  @@index([organizationId, studentId])
 }

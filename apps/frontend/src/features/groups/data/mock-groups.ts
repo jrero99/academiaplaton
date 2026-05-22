@@ -37,6 +37,7 @@ function makeGroup(
     notes,
     studentIds,
     studentCount: studentIds.length,
+    classType: 'GRUPAL',
     createdAt: '2025-09-15T08:00:00.000Z',
     updatedAt: '2026-04-22T15:30:00.000Z',
   };
