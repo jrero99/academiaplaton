@@ -315,6 +315,7 @@ export function TeachersListPage() {
         mode={sheet.open ? sheet.mode : 'create'}
         teacher={sheet.open && sheet.mode === 'edit' ? sheet.teacher : undefined}
         centers={accessibleCenters}
+        existingTeachers={teachers}
         onSubmit={handleSheetSubmit}
       />
     </>

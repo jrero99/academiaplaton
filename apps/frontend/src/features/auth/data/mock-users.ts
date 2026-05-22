@@ -11,7 +11,7 @@ const ADMIN_USER: AuthUser = {
   password: DEFAULT_PASSWORD,
   firstName: 'Administrador',
   lastName: 'Sistema',
-  role: 'admin',
+  roles: ['admin'],
 };
 
 // Un responsable por centro. Username predecible: "r" + slug-sin-prefijo-platon.
@@ -29,7 +29,7 @@ const MANAGER_USERS: AuthUser[] = MOCK_CENTERS.map((c) => ({
   password: DEFAULT_PASSWORD,
   firstName: 'Responsable',
   lastName: c.name,
-  role: 'center_manager',
+  roles: ['center_manager' as const],
   centerId: c.id,
 }));
 
@@ -50,15 +50,45 @@ const TEACHER_USERS: AuthUser[] = (() => {
       password: DEFAULT_PASSWORD,
       firstName: t.firstName,
       lastName: t.lastName,
-      role: 'teacher' as const,
+      roles: ['teacher' as const],
       centerId: t.centerId,
       teacherId: t.id,
     };
   });
 })();
 
+// ─── Usuarios con roles múltiples ────────────────────────────────────────────
+// Caso 1: admin que TAMBIÉN da clase.
+// Usa el primer profesor activo de mock-teachers (Montserrat Ferrer, Teresas).
+// No tiene centerId: en pantallas de gestión ve todo; en Mi Agenda filtra por teacherId.
+const ADMIN_TEACHER_USER: AuthUser = {
+  id: 'u-adminprof',
+  username: 'adminprof',
+  password: DEFAULT_PASSWORD,
+  firstName: 'Admin',
+  lastName: 'Profesor',
+  roles: ['admin', 'teacher'],
+  teacherId: '33333333-3333-3333-3333-333333333301', // Montserrat Ferrer (Teresas)
+};
+
+// Caso 2: responsable de Teresas que TAMBIÉN da clase.
+// Usa el segundo profesor de Teresas (Núria Codina).
+// centerId = Teresas (limita su vista de gestión a ese centro).
+const MANAGER_TEACHER_USER: AuthUser = {
+  id: 'u-rteresasprof',
+  username: 'rteresasprof',
+  password: DEFAULT_PASSWORD,
+  firstName: 'Responsable',
+  lastName: 'Teresas-Prof',
+  roles: ['center_manager', 'teacher'],
+  centerId: '00000000-0000-0000-0000-0000000000c1', // CENTER_PLATON_TERESAS
+  teacherId: '33333333-3333-3333-3333-333333333303', // Núria Codina (Teresas)
+};
+
 export const MOCK_USERS: AuthUser[] = [
   ADMIN_USER,
+  ADMIN_TEACHER_USER,
   ...MANAGER_USERS,
+  MANAGER_TEACHER_USER,
   ...TEACHER_USERS,
 ];

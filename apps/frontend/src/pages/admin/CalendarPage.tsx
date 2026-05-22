@@ -30,6 +30,7 @@ import {
 } from '@/features/sessions/lib/week';
 import { cn } from '@/lib/utils';
 import { useCurrentUser } from '@/contexts/AuthContext';
+import { userHasRole, userCanActAsTeacher } from '@/features/auth/lib/permissions';
 
 // Listado activo de academias (centros). Mientras no haya backend wired,
 // viene de mock-centers. Filtramos inactivas para no permitir crear
@@ -63,12 +64,16 @@ function detectConflict(
 
 export function CalendarPage() {
   const currentUser = useCurrentUser();
-  const isTeacher = currentUser.role === 'teacher';
-  const canEdit = !isTeacher;
+  // Un teacher puro ve solo sus sesiones (solo lectura).
+  // Un admin/manager que también enseña (roles múltiples) puede editar.
+  const isOnlyTeacher =
+    currentUser.roles.length === 1 && userHasRole(currentUser, 'teacher');
+  const canEdit = !isOnlyTeacher;
 
-  // Centros que puede ver: admin todos; los demás roles, sólo el suyo.
+  // Centros que puede ver: admin todos; los demás, solo el suyo.
+  // Un admin con teacherId tampoco tiene centerId → ve todos (rol admin prevalece).
   const accessibleCenters = useMemo(() => {
-    if (currentUser.role === 'admin') return CENTERS;
+    if (userHasRole(currentUser, 'admin')) return CENTERS;
     return CENTERS.filter((c) => c.id === currentUser.centerId);
   }, [currentUser]);
 
@@ -81,6 +86,15 @@ export function CalendarPage() {
   const [sheet, setSheet] = useState<SheetState>({ open: false });
   const [error, setError] = useState<string | null>(null);
 
+  // Usuarios multi-rol con vínculo a Teacher (admin+teacher, manager+teacher):
+  // por defecto ven TODAS las sesiones del centro (alcance admin/manager) y
+  // pueden activar "Solo mis clases" para filtrar por su teacherId.
+  // Un teacher puro siempre ve solo las suyas (no hay toggle).
+  const canToggleOwnSessions =
+    !isOnlyTeacher && userCanActAsTeacher(currentUser);
+  const [onlyMine, setOnlyMine] = useState(false);
+  const filterByOwnTeacher = isOnlyTeacher || (canToggleOwnSessions && onlyMine);
+
   // Posiciones derivadas según el modo
   const weekStart = useMemo(() => getMondayOf(currentDate), [currentDate]);
   const monthGridStart = useMemo(() => getMonthGridStart(currentDate), [currentDate]);
@@ -92,12 +106,13 @@ export function CalendarPage() {
     [centerId],
   );
 
-  // Sesiones visibles según el modo y el centro. Para profesores
-  // filtramos además por su propio teacherId — sólo ven sus clases.
+  // Sesiones visibles según el modo y el centro.
+  // Si filterByOwnTeacher está activo (teacher puro, o multi-rol con toggle ON),
+  // filtramos además por su teacherId.
   const visibleSessions = useMemo(() => {
     const inCenterAndTeacher = (s: SessionDto) =>
       s.centerId === centerId &&
-      (!isTeacher || s.teacherId === currentUser.teacherId);
+      (!filterByOwnTeacher || s.teacherId === currentUser.teacherId);
 
     if (viewMode === 'week') {
       const startIso = toIsoDate(weekStart);
@@ -119,7 +134,7 @@ export function CalendarPage() {
     return sessions.filter(
       (s) => inCenterAndTeacher(s) && s.date >= startIso && s.date < endIso,
     );
-  }, [sessions, centerId, viewMode, weekStart, monthGridStart, monthRowCount, year, isTeacher, currentUser.teacherId]);
+  }, [sessions, centerId, viewMode, weekStart, monthGridStart, monthRowCount, year, filterByOwnTeacher, currentUser.teacherId]);
 
   // Navegación dependiente del modo
   function goPrev() {
@@ -322,6 +337,18 @@ export function CalendarPage() {
               {accessibleCenters[0]?.name ?? '—'}
             </span>
           )}
+
+          {canToggleOwnSessions && (
+            <label className="ml-4 inline-flex items-center gap-2 text-sm text-muted-foreground cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={onlyMine}
+                onChange={(e) => setOnlyMine(e.target.checked)}
+                className="h-4 w-4 rounded border-input accent-primary"
+              />
+              Solo mis clases
+            </label>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2 self-start">
@@ -402,7 +429,7 @@ export function CalendarPage() {
               onSessionDrop={handleSessionDrop}
             />
             <p className="mt-3 text-xs text-muted-foreground">
-              {isTeacher
+              {isOnlyTeacher
                 ? 'Vista de sólo lectura: aquí ves únicamente las sesiones que tienes asignadas.'
                 : 'Click en una celda vacía para crear una sesión. Click en un bloque para editarla o eliminarla. Arrastra un bloque a otro slot para moverlo (snap a 15 min).'}
             </p>
@@ -415,6 +442,7 @@ export function CalendarPage() {
               monthDate={currentDate}
               sessions={visibleSessions}
               groups={centerGroups}
+              teachers={MOCK_TEACHERS}
               onDayClick={handleDayClick}
             />
             <p className="mt-3 text-xs text-muted-foreground">

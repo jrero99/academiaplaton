@@ -8,10 +8,14 @@ export interface AuthUser {
   password: string;
   firstName: string;
   lastName: string;
-  role: UserRole;
-  // Para center_manager: el centro que gestiona.
-  // Para teacher: el centro donde imparte (derivado del Teacher).
+  // Array de roles. Mínimo 1 elemento, sin duplicados.
+  // Un usuario puede tener más de un rol: p.ej. ['admin', 'teacher'].
+  roles: UserRole[];
+  // Para center_manager y teacher: el centro al que están scopeados.
+  // Un admin con roles: ['admin', 'teacher'] NO tiene centerId:
+  // en pantallas de gestión ve todos; en pantallas de profesor filtra por teacherId.
   centerId?: string;
-  // Para teacher: enlace al registro Teacher correspondiente.
+  // Presente cuando el usuario también actúa como profesor (tiene registro Teacher).
+  // Puede coincidir con cualquier rol: admin, center_manager o teacher.
   teacherId?: string;
 }

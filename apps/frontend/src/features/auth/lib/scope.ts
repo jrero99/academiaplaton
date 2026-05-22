@@ -1,12 +1,16 @@
 import type { AuthUser } from '../types';
 
 // Centro al que está limitada la vista del usuario actual.
-//   admin           → null  (ve todos los centros)
-//   center_manager  → su centerId
-//   teacher         → su centerId (sólo para coherencia, las pantallas
-//                     filtradas por centro no son accesibles al profesor)
+//   admin (puro o compuesto)  → null  (ve todos los centros)
+//   center_manager            → su centerId
+//   teacher                   → su centerId (las pantallas de gestión por
+//                               centro no son accesibles al teacher puro)
+//
+// Nota: un usuario con roles ['admin', 'teacher'] SIGUE devolviendo null aquí
+// porque el rol admin prevalece para el alcance de gestión. Las pantallas de
+// profesor (Mi agenda) filtran por teacherId directamente, no por centerId.
 export function scopedCenterId(user: AuthUser): string | null {
-  if (user.role === 'admin') return null;
+  if (user.roles.includes('admin')) return null;
   return user.centerId ?? null;
 }
 

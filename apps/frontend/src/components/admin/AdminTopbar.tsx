@@ -17,9 +17,9 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
-import { ROLE_LABELS } from '@/features/auth/lib/role-labels';
+import { roleSubline } from '@/features/auth/lib/role-labels';
 import { AdminNavGroup } from './AdminSidebar';
-import { MAIN_NAV_ITEMS, SETTINGS_NAV_ITEMS, filterByRole } from './AdminNavItems';
+import { MAIN_NAV_ITEMS, SETTINGS_NAV_ITEMS, filterNavItems, getAgendaItem } from './AdminNavItems';
 import platoLogo from '@/assets/logo/plato-logo.svg';
 
 function getInitials(firstName: string, lastName: string): string {
@@ -37,10 +37,15 @@ export function AdminTopbar() {
 
   const fullName = `${currentUser.firstName} ${currentUser.lastName}`.trim();
   const initials = getInitials(currentUser.firstName, currentUser.lastName);
-  const subline = `${ROLE_LABELS[currentUser.role]} · @${currentUser.username}`;
+  const subline = `${roleSubline(currentUser.roles)} · @${currentUser.username}`;
 
-  const mainItems = filterByRole(MAIN_NAV_ITEMS, currentUser.role);
-  const settingsItems = filterByRole(SETTINGS_NAV_ITEMS, currentUser.role);
+  const mainItems = filterNavItems(MAIN_NAV_ITEMS, currentUser);
+  const settingsItems = filterNavItems(SETTINGS_NAV_ITEMS, currentUser);
+
+  const agendaItem = getAgendaItem(currentUser);
+  const mainItemsWithAgenda = agendaItem
+    ? [...mainItems, agendaItem]
+    : mainItems;
 
   function handleLogout() {
     logout();
@@ -114,7 +119,7 @@ export function AdminTopbar() {
           </SheetHeader>
 
           <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-6">
-            <AdminNavGroup items={mainItems} onNavClick={() => setDrawerOpen(false)} />
+            <AdminNavGroup items={mainItemsWithAgenda} onNavClick={() => setDrawerOpen(false)} />
             {settingsItems.length > 0 && (
               <div>
                 <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">

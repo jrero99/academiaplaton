@@ -24,6 +24,12 @@ export const teachersRepo = {
     });
   },
 
+  findByCenterAndColor(centerId: string, color: string) {
+    return prisma.teacher.findUnique({
+      where: { centerId_color: { centerId, color } },
+    });
+  },
+
   create(data: Prisma.TeacherCreateInput) {
     return prisma.teacher.create({ data });
   },

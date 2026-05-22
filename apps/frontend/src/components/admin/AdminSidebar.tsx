@@ -3,11 +3,12 @@ import { LogOut } from 'lucide-react';
 import platoLogo from '@/assets/logo/plato-logo.svg';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-import { ROLE_LABELS } from '@/features/auth/lib/role-labels';
+import { roleSubline } from '@/features/auth/lib/role-labels';
 import {
   MAIN_NAV_ITEMS,
   SETTINGS_NAV_ITEMS,
-  filterByRole,
+  filterNavItems,
+  getAgendaItem,
   type NavItem,
 } from './AdminNavItems';
 
@@ -17,8 +18,14 @@ export function AdminSidebar() {
 
   if (!currentUser) return null;
 
-  const mainItems = filterByRole(MAIN_NAV_ITEMS, currentUser.role);
-  const settingsItems = filterByRole(SETTINGS_NAV_ITEMS, currentUser.role);
+  const mainItems = filterNavItems(MAIN_NAV_ITEMS, currentUser);
+  const settingsItems = filterNavItems(SETTINGS_NAV_ITEMS, currentUser);
+
+  // "Mi agenda" solo aparece para admin/manager que también son profesores.
+  const agendaItem = getAgendaItem(currentUser);
+  const mainItemsWithAgenda = agendaItem
+    ? [...mainItems, agendaItem]
+    : mainItems;
 
   function handleLogout() {
     logout();
@@ -32,7 +39,7 @@ export function AdminSidebar() {
       </div>
 
       <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-6">
-        <AdminNavGroup items={mainItems} />
+        <AdminNavGroup items={mainItemsWithAgenda} />
         {settingsItems.length > 0 && (
           <div>
             <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
@@ -49,7 +56,7 @@ export function AdminSidebar() {
             {currentUser.firstName} {currentUser.lastName}
           </p>
           <p className="text-xs text-zinc-500 truncate">
-            {ROLE_LABELS[currentUser.role]} · @{currentUser.username}
+            {roleSubline(currentUser.roles)} · @{currentUser.username}
           </p>
         </div>
         <button
@@ -69,7 +76,7 @@ export function AdminNavGroup({ items, onNavClick }: { items: NavItem[]; onNavCl
   return (
     <ul className="space-y-1">
       {items.map((item) => (
-        <li key={item.to}>
+        <li key={item.to + item.label}>
           <NavLink
             to={item.to}
             end={item.to === '/admin'}

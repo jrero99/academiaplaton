@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Check } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -13,7 +14,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import type { CenterDto } from '@academiaplaton/shared';
+import {
+  TEACHER_COLOR_IDS,
+  TEACHER_COLOR_PALETTE,
+  type CenterDto,
+  type TeacherColorId,
+} from '@academiaplaton/shared';
 import type { Teacher } from '../types';
 
 // ------------------------------------------------------------------ schema
@@ -27,6 +33,7 @@ const teacherSchema = z.object({
     .regex(/^[+\d\s\-().]{0,20}$/, 'Teléfono no válido')
     .or(z.literal(''))
     .optional(),
+  color: z.enum(TEACHER_COLOR_IDS).optional(),
   active: z.boolean(),
 });
 
@@ -34,7 +41,6 @@ type FormValues = z.infer<typeof teacherSchema>;
 
 type PasswordState = 'idle' | 'confirming' | 'loading' | 'success';
 
-// Native select alineado con shadcn Input
 const selectClassName =
   'h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-sm dark:bg-input/30';
 
@@ -44,20 +50,22 @@ interface Props {
   mode: 'create' | 'edit';
   teacher?: Teacher;
   centers: CenterDto[];
+  existingTeachers: Teacher[];
   onSubmit: (data: FormValues) => void;
 }
 
-// Formulario interno con valores iniciales ya resueltos — se re-monta via key cuando cambia el teacher/mode
 function TeacherForm({
   mode,
   teacher,
   centers,
+  existingTeachers,
   onSubmit,
   onCancel,
 }: {
   mode: 'create' | 'edit';
   teacher?: Teacher;
   centers: CenterDto[];
+  existingTeachers: Teacher[];
   onSubmit: (data: FormValues) => void;
   onCancel: () => void;
 }) {
@@ -70,6 +78,7 @@ function TeacherForm({
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(teacherSchema),
@@ -81,6 +90,7 @@ function TeacherForm({
             centerId: teacher.centerId,
             email: teacher.email,
             phone: teacher.phone ?? '',
+            color: teacher.color,
             active: teacher.active,
           }
         : {
@@ -89,12 +99,37 @@ function TeacherForm({
             centerId: '',
             email: '',
             phone: '',
+            color: undefined,
             active: true,
           },
   });
 
+  const selectedCenterId = watch('centerId');
+  const selectedColor = watch('color');
+
+  // Colores ya usados por otros profesores del mismo centro
+  const takenColors = useMemo(() => {
+    if (!selectedCenterId) return new Set<TeacherColorId>();
+    const taken = new Set<TeacherColorId>();
+    for (const t of existingTeachers) {
+      if (t.centerId !== selectedCenterId) continue;
+      if (mode === 'edit' && teacher && t.id === teacher.id) continue;
+      if (t.color) taken.add(t.color);
+    }
+    return taken;
+  }, [existingTeachers, selectedCenterId, mode, teacher]);
+
   function handleFormSubmit(values: FormValues) {
     onSubmit(values);
+  }
+
+  function handleColorPick(color: TeacherColorId) {
+    if (takenColors.has(color)) return;
+    // Permite deseleccionar haciendo click en el mismo color
+    setValue('color', selectedColor === color ? undefined : color, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
   }
 
   function handleRegenerate() {
@@ -172,6 +207,79 @@ function TeacherForm({
           )}
         </div>
 
+        {/* Color (visible en el calendario, único por academia) */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-baseline justify-between gap-2">
+            <label className="text-sm font-medium">
+              Color en el calendario{' '}
+              <span className="text-muted-foreground text-xs">(opcional)</span>
+            </label>
+            {selectedColor && (
+              <button
+                type="button"
+                onClick={() =>
+                  setValue('color', undefined, { shouldDirty: true, shouldValidate: true })
+                }
+                className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+              >
+                Quitar
+              </button>
+            )}
+          </div>
+          {!selectedCenterId && (
+            <p className="text-xs text-muted-foreground">
+              Selecciona primero una academia para elegir color.
+            </p>
+          )}
+          <div
+            role="radiogroup"
+            aria-label="Color del profesor"
+            className="grid grid-cols-4 gap-2 sm:grid-cols-8"
+          >
+            {TEACHER_COLOR_IDS.map((id) => {
+              const palette = TEACHER_COLOR_PALETTE[id];
+              const isTaken = takenColors.has(id);
+              const isSelected = selectedColor === id;
+              const disabled = !selectedCenterId || isTaken;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={isSelected}
+                  aria-label={
+                    isTaken ? `${palette.label} (ya en uso en esta academia)` : palette.label
+                  }
+                  disabled={disabled}
+                  onClick={() => handleColorPick(id)}
+                  className={
+                    'group relative flex h-10 items-center justify-center rounded-md border-2 transition-all ' +
+                    (isSelected
+                      ? 'border-foreground shadow-sm scale-105 '
+                      : 'border-transparent hover:border-muted-foreground/40 ') +
+                    (disabled ? 'cursor-not-allowed opacity-40 ' : 'cursor-pointer ')
+                  }
+                  style={{ backgroundColor: palette.swatch }}
+                  title={
+                    isTaken
+                      ? `${palette.label} — ya en uso en esta academia`
+                      : palette.label
+                  }
+                >
+                  {isSelected && (
+                    <Check className="h-4 w-4 text-white drop-shadow" aria-hidden />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          {selectedCenterId && takenColors.size >= TEACHER_COLOR_IDS.length && !selectedColor && (
+            <p className="text-xs text-destructive">
+              No quedan colores libres en esta academia.
+            </p>
+          )}
+        </div>
+
         {/* Email */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="teacher-email" className="text-sm font-medium">
@@ -205,7 +313,7 @@ function TeacherForm({
           )}
         </div>
 
-        {/* Activo — estado local sincronizado con react-hook-form */}
+        {/* Activo */}
         <div className="flex items-center gap-3">
           <input
             id="teacher-active"
@@ -297,14 +405,20 @@ function TeacherForm({
 }
 
 // ------------------------------------------------------------------ shell
-export function TeacherSheet({ open, onOpenChange, mode, teacher, centers, onSubmit }: Props) {
+export function TeacherSheet({
+  open,
+  onOpenChange,
+  mode,
+  teacher,
+  centers,
+  existingTeachers,
+  onSubmit,
+}: Props) {
   function handleSubmit(data: FormValues) {
     onSubmit(data);
     onOpenChange(false);
   }
 
-  // La key fuerza re-mount de TeacherForm cuando cambia el profesor o el modo,
-  // evitando useEffect con setState para precargar valores.
   const formKey = mode === 'edit' && teacher ? teacher.id : 'create';
 
   return (
@@ -324,6 +438,7 @@ export function TeacherSheet({ open, onOpenChange, mode, teacher, centers, onSub
           mode={mode}
           teacher={teacher}
           centers={centers}
+          existingTeachers={existingTeachers}
           onSubmit={handleSubmit}
           onCancel={() => onOpenChange(false)}
         />

@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { MOCK_USERS } from '@/features/auth/data/mock-users';
 import { MOCK_CENTERS } from '@/features/centers/data/mock-centers';
-import { ROLE_LABELS } from '@/features/auth/lib/role-labels';
+import { ROLE_LABELS, roleLabels } from '@/features/auth/lib/role-labels';
 import type { AuthUser, UserRole } from '@/features/auth/types';
 
 const loginSchema = z.object({
@@ -45,13 +45,19 @@ export function LoginPage() {
     [],
   );
 
+  // Agrupa mocks por su PRIMER rol para el panel demo.
+  // Los usuarios con roles múltiples (adminprof, rteresasprof) aparecen en la
+  // sección de su rol principal y muestran todos los roles en el subtítulo.
   const usersByRole = useMemo(() => {
     const groups: Record<UserRole, AuthUser[]> = {
       admin: [],
       center_manager: [],
       teacher: [],
     };
-    for (const user of MOCK_USERS) groups[user.role].push(user);
+    for (const user of MOCK_USERS) {
+      const primaryRole = user.roles[0];
+      if (primaryRole) groups[primaryRole].push(user);
+    }
     return groups;
   }, []);
 
@@ -163,6 +169,11 @@ export function LoginPage() {
                       const centerName = u.centerId ? centerNameById.get(u.centerId) : undefined;
                       const personName =
                         role === 'admin' ? null : `${u.firstName} ${u.lastName}`;
+                      // Mostrar todos los roles si el usuario tiene más de uno
+                      const rolesLabel =
+                        u.roles.length > 1
+                          ? roleLabels(u.roles).join(' + ')
+                          : null;
                       return (
                         <li key={u.id}>
                           <button
@@ -178,8 +189,12 @@ export function LoginPage() {
                                 {u.password}
                               </span>
                             </div>
-                            {(personName || centerName) && (
+                            {(personName || centerName || rolesLabel) && (
                               <div className="mt-0.5 text-xs text-muted-foreground truncate">
+                                {rolesLabel && (
+                                  <span className="font-medium text-foreground/70">{rolesLabel}</span>
+                                )}
+                                {rolesLabel && (personName || centerName) ? ' · ' : ''}
                                 {personName}
                                 {personName && centerName ? ' · ' : ''}
                                 {centerName}

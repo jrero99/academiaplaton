@@ -7,6 +7,10 @@ import {
 
 const ORG_ID = '00000000-0000-0000-0000-000000000001';
 
+// Colores asignados respetando unicidad por centerId.
+// Teresas → blue, green, orange (3 profesores)
+// Molinos → red, yellow (2 profesores)
+// Teresas 2 → purple (1 profesor)
 export const MOCK_TEACHERS: Teacher[] = [
   {
     id: '33333333-3333-3333-3333-333333333301',
@@ -16,6 +20,7 @@ export const MOCK_TEACHERS: Teacher[] = [
     lastName: 'Ferrer Bosch',
     email: 'montserrat.ferrer@platoacademia.com',
     phone: '+34 612 100 201',
+    color: 'blue',
     active: true,
     createdAt: '2025-09-01T08:00:00.000Z',
   },
@@ -27,6 +32,7 @@ export const MOCK_TEACHERS: Teacher[] = [
     lastName: 'Sala Puig',
     email: 'jordi.sala@platoacademia.com',
     phone: '+34 633 200 302',
+    color: 'red',
     active: true,
     createdAt: '2025-09-01T08:15:00.000Z',
   },
@@ -37,6 +43,7 @@ export const MOCK_TEACHERS: Teacher[] = [
     firstName: 'Núria',
     lastName: 'Codina Mir',
     email: 'nuria.codina@platoacademia.com',
+    color: 'green',
     active: true,
     createdAt: '2025-10-10T09:30:00.000Z',
   },
@@ -48,6 +55,7 @@ export const MOCK_TEACHERS: Teacher[] = [
     lastName: 'Martínez Gómez',
     email: 'raul.martinez@platoacademia.com',
     phone: '+34 655 400 404',
+    color: 'purple',
     active: false,
     createdAt: '2025-11-20T11:00:00.000Z',
   },
@@ -59,6 +67,7 @@ export const MOCK_TEACHERS: Teacher[] = [
     lastName: 'Domingo Coll',
     email: 'laia.domingo@platoacademia.com',
     phone: '+34 678 500 505',
+    color: 'yellow',
     active: true,
     createdAt: '2026-01-07T10:00:00.000Z',
   },
@@ -69,6 +78,7 @@ export const MOCK_TEACHERS: Teacher[] = [
     firstName: 'Andreu',
     lastName: 'Pons Esteve',
     email: 'andreu.pons@platoacademia.com',
+    color: 'orange',
     active: false,
     createdAt: '2026-03-15T09:00:00.000Z',
   },

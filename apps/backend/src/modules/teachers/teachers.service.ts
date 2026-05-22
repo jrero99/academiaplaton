@@ -1,9 +1,11 @@
 import type { Teacher } from '@prisma/client';
-import type {
-  TeacherCreate,
-  TeacherDto,
-  TeacherFilters,
-  TeacherUpdate,
+import {
+  TEACHER_COLOR_PALETTE,
+  type TeacherColorId,
+  type TeacherCreate,
+  type TeacherDto,
+  type TeacherFilters,
+  type TeacherUpdate,
 } from '@academiaplaton/shared';
 import { AppError } from '../../lib/AppError.js';
 import { prisma } from '../../lib/prisma.js';
@@ -18,6 +20,7 @@ function toDto(t: Teacher): TeacherDto {
     lastName: t.lastName,
     email: t.email,
     phone: t.phone ?? undefined,
+    color: (t.color as TeacherColorId | null) ?? undefined,
     active: t.active,
     notes: t.notes ?? undefined,
     createdAt: t.createdAt.toISOString(),
@@ -29,6 +32,20 @@ async function assertCenterBelongsToOrg(organizationId: string, centerId: string
   const center = await prisma.center.findUnique({ where: { id: centerId } });
   if (!center || center.organizationId !== organizationId) {
     throw AppError.notFound('Center');
+  }
+}
+
+async function assertColorAvailable(
+  centerId: string,
+  color: TeacherColorId,
+  excludeTeacherId?: string,
+) {
+  const existing = await teachersRepo.findByCenterAndColor(centerId, color);
+  if (existing && existing.id !== excludeTeacherId) {
+    const label = TEACHER_COLOR_PALETTE[color]?.label ?? color;
+    throw AppError.conflict(
+      `El color "${label}" ya está asignado a otro profesor de este centro`,
+    );
   }
 }
 
@@ -66,6 +83,9 @@ export const teachersService = {
     await assertCenterBelongsToOrg(organizationId, input.centerId);
     const dup = await teachersRepo.findByEmail(organizationId, input.email);
     if (dup) throw AppError.conflict(`Teacher email "${input.email}" already in use`);
+    if (input.color) {
+      await assertColorAvailable(input.centerId, input.color);
+    }
     const { centerId, ...rest } = input;
     const created = await teachersRepo.create({
       ...rest,
@@ -84,6 +104,13 @@ export const teachersService = {
     if (input.email && input.email !== existing.email) {
       const dup = await teachersRepo.findByEmail(organizationId, input.email);
       if (dup) throw AppError.conflict(`Teacher email "${input.email}" already in use`);
+    }
+    // Comprobar unicidad de color cuando cambia el color o el centro asociado.
+    const targetCenterId = input.centerId ?? existing.centerId;
+    const colorChanges = input.color !== undefined && input.color !== existing.color;
+    const centerChanges = input.centerId !== undefined && input.centerId !== existing.centerId;
+    if (input.color && (colorChanges || centerChanges)) {
+      await assertColorAvailable(targetCenterId, input.color, id);
     }
     const { centerId, ...rest } = input;
     const updated = await teachersRepo.update(id, {

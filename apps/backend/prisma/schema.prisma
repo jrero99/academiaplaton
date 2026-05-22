@@ -16,7 +16,7 @@ datasource db {
 
 enum UserRole {
   admin
-  staff
+  center_manager
   teacher
 }
 
@@ -93,18 +93,29 @@ model User {
 }
 
 model UserOrganization {
-  id             String   @id @default(uuid()) @db.Char(36)
-  userId         String   @db.Char(36)
-  organizationId String   @db.Char(36)
-  role           UserRole
+  id             String  @id @default(uuid()) @db.Char(36)
+  userId         String  @db.Char(36)
+  organizationId String  @db.Char(36)
+
+  // Roles en CSV ("admin,teacher"). Sin arrays nativos en MySQL; mismo patrón
+  // que Organization.enabledModules. El repo parsea con parseRoles() / serializeRoles().
+  // Al menos un rol requerido — validado en Zod (shared/users.ts).
+  roles          String  @default("admin") @db.VarChar(255)
+
+  // Vínculo opcional a Teacher: permite que un admin/center_manager que también
+  // imparte clases comparta el mismo registro Teacher en grupos/sesiones.
+  // Constraint de misma org se valida en service, no en FK compuesta (Prisma no lo soporta).
+  teacherId      String? @db.Char(36)
 
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  teacher      Teacher?     @relation(fields: [teacherId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
 
   @@unique([userId, organizationId])
   @@index([organizationId])
+  @@index([organizationId, teacherId])
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -335,18 +346,28 @@ model Teacher {
   lastName       String  @db.VarChar(120)
   email          String  @db.VarChar(160)
   phone          String? @db.VarChar(20)
+  // Color asignado al profesor en el calendario. Valores válidos en
+  // TEACHER_COLOR_IDS (packages/shared). Único por centerId — la validación
+  // se hace en el servicio porque MySQL no permite unique con NULLs en algunos
+  // motores, y queremos permitir múltiples profesores sin color asignado.
+  color          String? @db.VarChar(16)
   active         Boolean @default(true)
   notes          String? @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  center       Center       @relation(fields: [centerId], references: [id], onDelete: Restrict)
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  center       Center            @relation(fields: [centerId], references: [id], onDelete: Restrict)
   groups       Group[]
   sessions     Session[]
+  memberships  UserOrganization[]
 
   @@unique([organizationId, email])
+  // Unicidad de color por centro. MySQL trata cada NULL como distinto, así que
+  // múltiples profesores sin color asignado no colisionan; sí lo hacen dos con
+  // el mismo color en el mismo center.
+  @@unique([centerId, color])
   @@index([organizationId, centerId])
   @@index([organizationId, lastName, firstName])
 }

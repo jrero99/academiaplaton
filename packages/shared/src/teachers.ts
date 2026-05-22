@@ -1,6 +1,9 @@
 import { z } from 'zod';
+import { TEACHER_COLOR_IDS } from './teacher-colors.js';
 
 const phoneRegex = /^[+]?[0-9\s-]{7,20}$/;
+
+export const TeacherColorSchema = z.enum(TEACHER_COLOR_IDS);
 
 export const TeacherCreateSchema = z.object({
   centerId: z.string().uuid(),
@@ -8,6 +11,7 @@ export const TeacherCreateSchema = z.object({
   lastName: z.string().min(1).max(120),
   email: z.string().email().max(160),
   phone: z.string().regex(phoneRegex).optional(),
+  color: TeacherColorSchema.optional(),
   active: z.boolean().default(true),
   notes: z.string().max(2000).optional(),
 });
@@ -24,6 +28,7 @@ export const TeacherDtoSchema = z.object({
   lastName: z.string(),
   email: z.string().email(),
   phone: z.string().optional(),
+  color: TeacherColorSchema.optional(),
   active: z.boolean(),
   notes: z.string().optional(),
   createdAt: z.string().datetime(),
