@@ -19,21 +19,7 @@ import {
 import { LeadStatusBadge } from '@/features/leads/components/LeadStatusBadge';
 import { MOCK_LEADS } from '@/features/leads/data/mock-leads';
 import type { LeadStatus } from '@academiaplaton/shared';
-
-const STATUS_OPTIONS: Array<{ value: LeadStatus; label: string }> = [
-  { value: 'new', label: 'Nuevo' },
-  { value: 'contacted', label: 'Contactado' },
-  { value: 'visit_scheduled', label: 'Visita' },
-  { value: 'trial_class', label: 'Prueba' },
-  { value: 'converted', label: 'Convertido' },
-  { value: 'lost', label: 'Perdido' },
-];
-
-const dateFmt = new Intl.DateTimeFormat('es-ES', {
-  day: '2-digit',
-  month: '2-digit',
-  year: 'numeric',
-});
+import { useTranslation } from '@/contexts/LanguageContext';
 
 type FilterState = {
   search: string;
@@ -59,15 +45,31 @@ function includesCi(haystack: string | null | undefined, needle: string): boolea
 }
 
 export function LeadsListPage() {
+  const { t, locale } = useTranslation();
   const [filters, setFilters] = useState<FilterState>(initialFilters);
+
+  const dateFmt = useMemo(
+    () => new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', year: 'numeric' }),
+    [locale],
+  );
+
+  // Status options built from translation keys so they react to locale changes
+  const STATUS_OPTIONS: Array<{ value: LeadStatus; labelKey: string }> = [
+    { value: 'new', labelKey: 'leads.status.new' },
+    { value: 'contacted', labelKey: 'leads.status.contacted' },
+    { value: 'visit_scheduled', labelKey: 'leads.status.visit_scheduled' },
+    { value: 'trial_class', labelKey: 'leads.status.trial_class' },
+    { value: 'converted', labelKey: 'leads.status.converted' },
+    { value: 'lost', labelKey: 'leads.status.lost' },
+  ];
 
   const courseOptions = useMemo(() => {
     const set = new Set<string>();
     for (const l of MOCK_LEADS) {
       if (l.interestedCourse) set.add(l.interestedCourse);
     }
-    return Array.from(set).sort((a, b) => a.localeCompare(b, 'es'));
-  }, []);
+    return Array.from(set).sort((a, b) => a.localeCompare(b, locale));
+  }, [locale]);
 
   const hasActiveFilters =
     filters.search !== '' ||
@@ -104,83 +106,83 @@ export function LeadsListPage() {
   return (
     <>
       <PageHeader
-        title="Leads"
-        breadcrumbs={[{ label: 'Admin', to: '/admin' }, { label: 'Leads' }]}
+        title={t('leads.title')}
+        breadcrumbs={[{ label: t('breadcrumb.admin'), to: '/admin' }, { label: t('leads.title') }]}
       />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
         <Button>
           <Plus className="h-4 w-4" />
-          Nuevo lead
+          {t('leads.new')}
         </Button>
       </div>
 
       <FilterBar hasActive={hasActiveFilters} onClear={clearFilters}>
-        <FilterField label="Buscador">
+        <FilterField label={t('filterbar.search_label')}>
           <input
             type="text"
             className={filterInputClass}
             value={filters.search}
             onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
-            placeholder="Nombre, email, curso..."
-            aria-label="Buscador general"
+            placeholder={t('common.placeholder_search_name_email_course')}
+            aria-label={t('common.search_general_aria')}
           />
         </FilterField>
 
-        <FilterField label="Nombre">
+        <FilterField label={t('common.name')}>
           <input
             type="text"
             className={filterInputClass}
             value={filters.firstName}
             onChange={(e) => setFilters((f) => ({ ...f, firstName: e.target.value }))}
-            aria-label="Filtrar por nombre"
+            aria-label={t('common.filter_by_name_aria')}
           />
         </FilterField>
 
-        <FilterField label="Apellidos">
+        <FilterField label={t('common.surname')}>
           <input
             type="text"
             className={filterInputClass}
             value={filters.lastName}
             onChange={(e) => setFilters((f) => ({ ...f, lastName: e.target.value }))}
-            aria-label="Filtrar por apellidos"
+            aria-label={t('common.filter_by_surname_aria')}
           />
         </FilterField>
 
-        <FilterField label="Email">
+        <FilterField label={t('common.email')}>
           <input
             type="text"
             className={filterInputClass}
             value={filters.email}
             onChange={(e) => setFilters((f) => ({ ...f, email: e.target.value }))}
-            aria-label="Filtrar por email"
+            aria-label={t('common.filter_by_email_aria')}
           />
         </FilterField>
 
-        <FilterField label="Estado">
+        <FilterField label={t('common.status')}>
           <select
             className={filterSelectClass}
             value={filters.status}
             onChange={(e) =>
               setFilters((f) => ({ ...f, status: e.target.value as LeadStatus | '' }))
             }
-            aria-label="Filtrar por estado"
+            aria-label={t('common.filter_by_status_aria')}
           >
-            <option value="">Todos</option>
+            <option value="">{t('leads.filter.status_all')}</option>
             {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+              <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
             ))}
           </select>
         </FilterField>
 
-        <FilterField label="Curso de interés">
+        <FilterField label={t('leads.filter.course')}>
           <select
             className={filterSelectClass}
             value={filters.course}
             onChange={(e) => setFilters((f) => ({ ...f, course: e.target.value }))}
-            aria-label="Filtrar por curso de interés"
+            aria-label={t('leads.filter.course_aria')}
           >
-            <option value="">Todos</option>
+            <option value="">{t('leads.filter.course_all')}</option>
             {courseOptions.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
@@ -194,19 +196,19 @@ export function LeadsListPage() {
             <TableHeader>
               <TableRow className="bg-muted hover:bg-muted">
                 <TableHead className="w-12 text-muted-foreground hidden sm:table-cell">#</TableHead>
-                <TableHead>Nombre completo</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="hidden sm:table-cell">Email</TableHead>
-                <TableHead className="hidden md:table-cell">Curso de interés</TableHead>
-                <TableHead className="hidden md:table-cell">Fecha de alta</TableHead>
-                <TableHead className="w-24 text-right">Acciones</TableHead>
+                <TableHead>{t('common.full_name')}</TableHead>
+                <TableHead>{t('common.status')}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('common.email')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('leads.col.course_interest')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('leads.col.created_at')}</TableHead>
+                <TableHead className="w-24 text-right">{t('common.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                    No hay leads que coincidan con la búsqueda.
+                    {t('leads.empty')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -230,9 +232,9 @@ export function LeadsListPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
-                        <RowAction icon={ArrowUpRight} label="Abrir" />
-                        <RowAction icon={Pencil} label="Editar" />
-                        <RowAction icon={Trash2} label="Borrar" destructive />
+                        <RowAction icon={ArrowUpRight} label={t('common.open_record')} />
+                        <RowAction icon={Pencil} label={t('common.edit')} />
+                        <RowAction icon={Trash2} label={t('common.delete')} destructive />
                       </div>
                     </TableCell>
                   </TableRow>

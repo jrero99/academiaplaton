@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { getSessionAttendance, saveSessionAttendance } from '../data/mock-attendance';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tipos y helpers
@@ -45,10 +46,10 @@ function initials(firstName: string, lastName: string): string {
   return `${f}${l}`.toUpperCase();
 }
 
-function formatDate(isoDate: string): string {
+function formatDate(isoDate: string, locale: string): string {
   const [year, month, day] = isoDate.split('-').map(Number) as [number, number, number];
   const d = new Date(year, month - 1, day);
-  return d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+  return d.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
 const MAX_JUSTIFICATION = 500;
@@ -65,6 +66,7 @@ interface StudentRowProps {
 }
 
 function StudentRow({ mark, readOnly, onChange, rowIndex }: StudentRowProps) {
+  const { t } = useTranslation();
   const justLen = mark.justification.length;
   const textareaId = `just-${mark.studentId}`;
   const counterId = `just-count-${mark.studentId}`;
@@ -91,16 +93,16 @@ function StudentRow({ mark, readOnly, onChange, rowIndex }: StudentRowProps) {
             className="shrink-0 self-start sm:self-center"
           >
             {mark.status === 'present'
-              ? 'Presente'
+              ? t('attendance.sheet.present')
               : mark.justified
-                ? 'Ausente justificada'
-                : 'Ausente'}
+                ? t('attendance.sheet.absent_justified')
+                : t('attendance.sheet.absent')}
           </Badge>
         ) : (
           /* Toggle Presente / Ausente */
           <div
             role="group"
-            aria-label={`Asistencia de ${mark.firstName} ${mark.lastName}`}
+            aria-label={t('attendance.sheet.student_attendance_aria', { name: `${mark.firstName} ${mark.lastName}` })}
             className="inline-flex rounded-md border border-input bg-background shadow-sm shrink-0 self-start sm:self-center"
           >
             <button
@@ -115,7 +117,7 @@ function StudentRow({ mark, readOnly, onChange, rowIndex }: StudentRowProps) {
                   : 'text-muted-foreground hover:text-foreground',
               )}
             >
-              Presente
+              {t('attendance.sheet.present')}
             </button>
             <button
               type="button"
@@ -128,7 +130,7 @@ function StudentRow({ mark, readOnly, onChange, rowIndex }: StudentRowProps) {
                   : 'text-muted-foreground hover:text-foreground',
               )}
             >
-              Ausente
+              {t('attendance.sheet.absent')}
             </button>
           </div>
         )}
@@ -140,13 +142,13 @@ function StudentRow({ mark, readOnly, onChange, rowIndex }: StudentRowProps) {
           {readOnly ? (
             mark.justified ? (
               <div className="flex flex-col gap-0.5">
-                <span className="text-xs font-medium text-muted-foreground">Justificada</span>
+                <span className="text-xs font-medium text-muted-foreground">{t('attendance.sheet.justified_label')}</span>
                 {mark.justification && (
                   <p className="text-xs text-foreground">{mark.justification}</p>
                 )}
               </div>
             ) : (
-              <span className="text-xs text-muted-foreground italic">Sin justificar</span>
+              <span className="text-xs text-muted-foreground italic">{t('attendance.sheet.unjustified')}</span>
             )
           ) : (
             <>
@@ -156,15 +158,18 @@ function StudentRow({ mark, readOnly, onChange, rowIndex }: StudentRowProps) {
                   checked={mark.justified}
                   onChange={(e) => onChange({ justified: e.target.checked })}
                   className="h-3.5 w-3.5 rounded border-input accent-primary"
-                  aria-label={`Marcar ausencia de ${mark.firstName} como justificada`}
+                  aria-label={t('attendance.sheet.mark_justified_aria', { name: mark.firstName })}
                 />
-                Justificada
+                {t('attendance.sheet.justified_label')}
               </label>
 
               {mark.justified && (
                 <div className="flex flex-col gap-1">
                   <label htmlFor={textareaId} className="text-xs text-muted-foreground">
-                    Motivo <span className="text-xs opacity-60">(opcional, max. {MAX_JUSTIFICATION})</span>
+                    {t('attendance.sheet.justification_reason')}{' '}
+                    <span className="text-xs opacity-60">
+                      {t('attendance.sheet.justification_optional', { max: MAX_JUSTIFICATION })}
+                    </span>
                   </label>
                   <textarea
                     id={textareaId}
@@ -221,6 +226,8 @@ export function AttendanceSheet({
   markedByUserId,
   onSaved,
 }: AttendanceSheetProps) {
+  const { t, locale } = useTranslation();
+
   // Inicialización eager: se recalcula cuando cambia session.id.
   // El componente recibe key={session.id} en el caller (CalendarPage),
   // por lo que cada sesión distinta monta una instancia fresca y este
@@ -232,7 +239,6 @@ export function AttendanceSheet({
   const [marks, setMarks] = useState<LocalMark[]>(initialMarks);
   const [saving, setSaving] = useState(false);
   const firstToggleRef = useRef<HTMLButtonElement | null>(null);
-
 
   // Foco al primer toggle al abrir (accesibilidad)
   useEffect(() => {
@@ -270,24 +276,36 @@ export function AttendanceSheet({
   const totalAbsent = marks.filter((m) => m.status === 'absent').length;
   const totalJustified = marks.filter((m) => m.status === 'absent' && m.justified).length;
 
+  const pluralSuffix = (count: number) => (count !== 1 ? 's' : '');
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto flex flex-col">
         <SheetHeader className="px-6 pt-6 pb-2">
           <SheetTitle className="text-base leading-snug">{group.name}</SheetTitle>
           <SheetDescription className="text-sm">
-            {formatDate(session.date)} · {session.startTime}–{session.endTime} ·{' '}
+            {formatDate(session.date, locale)} · {session.startTime}–{session.endTime} ·{' '}
             {teacher.firstName} {teacher.lastName}
           </SheetDescription>
 
           {/* Totales en tiempo real */}
-          <div className="flex flex-wrap gap-1.5 pt-1" aria-live="polite" aria-label="Resumen de asistencia">
-            <Badge variant="secondary">{totalPresent} presente{totalPresent !== 1 ? 's' : ''}</Badge>
+          <div
+            className="flex flex-wrap gap-1.5 pt-1"
+            aria-live="polite"
+            aria-label={t('attendance.sheet.summary_aria')}
+          >
+            <Badge variant="secondary">
+              {t('attendance.sheet.present_count', { count: totalPresent, suffix: pluralSuffix(totalPresent) })}
+            </Badge>
             {totalAbsent > 0 && (
-              <Badge variant="destructive">{totalAbsent} ausente{totalAbsent !== 1 ? 's' : ''}</Badge>
+              <Badge variant="destructive">
+                {t('attendance.sheet.absent_count', { count: totalAbsent, suffix: pluralSuffix(totalAbsent) })}
+              </Badge>
             )}
             {totalJustified > 0 && (
-              <Badge variant="outline">{totalJustified} justificada{totalJustified !== 1 ? 's' : ''}</Badge>
+              <Badge variant="outline">
+                {t('attendance.sheet.justified_count', { count: totalJustified, suffix: pluralSuffix(totalJustified) })}
+              </Badge>
             )}
           </div>
         </SheetHeader>
@@ -296,7 +314,7 @@ export function AttendanceSheet({
         <div className="flex-1 overflow-y-auto px-6 py-2">
           {marks.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
-              No hay alumnos asignados a este grupo.
+              {t('attendance.sheet.no_students')}
             </p>
           ) : (
             marks.map((mark, idx) => (
@@ -314,17 +332,17 @@ export function AttendanceSheet({
         {!readOnly && (
           <SheetFooter className="px-6 pb-6 pt-2 flex-row justify-end gap-2 border-t border-border">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
+              {t('attendance.sheet.cancel')}
             </Button>
             <Button type="button" onClick={handleSave} disabled={saving}>
-              {saving ? 'Guardando...' : 'Guardar lista'}
+              {saving ? t('attendance.sheet.saving') : t('attendance.sheet.save')}
             </Button>
           </SheetFooter>
         )}
 
         {readOnly && (
           <div className="px-6 pb-6 pt-2 border-t border-border">
-            <p className="text-xs text-muted-foreground">Vista de solo lectura.</p>
+            <p className="text-xs text-muted-foreground">{t('attendance.sheet.readonly_hint')}</p>
           </div>
         )}
       </SheetContent>

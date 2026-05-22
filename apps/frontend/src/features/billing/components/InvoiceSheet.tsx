@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { InvoiceDto, StudentDto } from '@academiaplaton/shared';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 // ------------------------------------------------------------------ schema
 const invoiceSchema = z.object({
@@ -39,14 +40,6 @@ const invoiceSchema = z.object({
 });
 
 export type InvoiceFormValues = z.infer<typeof invoiceSchema>;
-
-const STATUS_OPTIONS: { value: InvoiceFormValues['status']; label: string }[] = [
-  { value: 'pending', label: 'Pendiente' },
-  { value: 'sent', label: 'Enviado' },
-  { value: 'paid', label: 'Pagado' },
-  { value: 'overdue', label: 'Vencido' },
-  { value: 'cancelled', label: 'Anulado' },
-];
 
 const selectClassName =
   'h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-sm dark:bg-input/30';
@@ -87,6 +80,16 @@ function InvoiceForm({
   onSubmit: (data: InvoiceFormValues) => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
+
+  const STATUS_OPTIONS: { value: InvoiceFormValues['status']; labelKey: string }[] = [
+    { value: 'pending', labelKey: 'invoices.status.pending' },
+    { value: 'sent',    labelKey: 'invoices.status.sent' },
+    { value: 'paid',    labelKey: 'invoices.status.paid' },
+    { value: 'overdue', labelKey: 'invoices.status.overdue' },
+    { value: 'cancelled', labelKey: 'invoices.status.cancelled' },
+  ];
+
   const today = new Date();
   const defaultMonth = today.getMonth() + 1;
   const defaultYear = today.getFullYear();
@@ -148,7 +151,7 @@ function InvoiceForm({
       >
         <div className="flex flex-col gap-1.5">
           <label htmlFor="invoice-student" className="text-sm font-medium">
-            Alumno <span aria-hidden="true" className="text-destructive">*</span>
+            {t('invoice_sheet.field.student')} <span aria-hidden="true" className="text-destructive">*</span>
           </label>
           <select
             id="invoice-student"
@@ -157,7 +160,7 @@ function InvoiceForm({
             value={watchedStudentId ?? ''}
             onChange={handleStudentChange}
           >
-            <option value="">— Selecciona un alumno —</option>
+            <option value="">{t('invoice_sheet.field.student_placeholder')}</option>
             {students.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.firstName} {s.lastName}
@@ -173,7 +176,7 @@ function InvoiceForm({
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="invoice-number" className="text-sm font-medium">
-              Nº recibo <span aria-hidden="true" className="text-destructive">*</span>
+              {t('invoices.col.number')} <span aria-hidden="true" className="text-destructive">*</span>
             </label>
             <Input
               id="invoice-number"
@@ -186,7 +189,7 @@ function InvoiceForm({
           </div>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="invoice-amount" className="text-sm font-medium">
-              Importe (€) <span aria-hidden="true" className="text-destructive">*</span>
+              {t('invoice_sheet.field.amount_eur')} <span aria-hidden="true" className="text-destructive">*</span>
             </label>
             <Input
               id="invoice-amount"
@@ -211,11 +214,11 @@ function InvoiceForm({
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="invoice-concept" className="text-sm font-medium">
-            Concepto <span aria-hidden="true" className="text-destructive">*</span>
+            {t('invoices.col.concept')} <span aria-hidden="true" className="text-destructive">*</span>
           </label>
           <Input
             id="invoice-concept"
-            placeholder="Cuota mayo 2026"
+            placeholder={t('invoice_sheet.field.concept_placeholder')}
             aria-invalid={!!errors.concept}
             {...register('concept')}
           />
@@ -227,7 +230,7 @@ function InvoiceForm({
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="invoice-period-month" className="text-sm font-medium">
-              Mes <span aria-hidden="true" className="text-destructive">*</span>
+              {t('invoice_sheet.field.period_month')} <span aria-hidden="true" className="text-destructive">*</span>
             </label>
             <select
               id="invoice-period-month"
@@ -244,7 +247,7 @@ function InvoiceForm({
           </div>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="invoice-period-year" className="text-sm font-medium">
-              Año <span aria-hidden="true" className="text-destructive">*</span>
+              {t('invoice_sheet.field.period_year')} <span aria-hidden="true" className="text-destructive">*</span>
             </label>
             <Input
               id="invoice-period-year"
@@ -263,7 +266,7 @@ function InvoiceForm({
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="invoice-due" className="text-sm font-medium">
-              Fecha vencimiento <span aria-hidden="true" className="text-destructive">*</span>
+              {t('invoice_sheet.field.due_date_label')} <span aria-hidden="true" className="text-destructive">*</span>
             </label>
             <Input
               id="invoice-due"
@@ -277,7 +280,7 @@ function InvoiceForm({
           </div>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="invoice-issued" className="text-sm font-medium">
-              Cobro enviado <span className="text-muted-foreground text-xs">(opcional)</span>
+              {t('invoice_sheet.field.issued_at')} <span className="text-muted-foreground text-xs">{t('common.optional')}</span>
             </label>
             <Input
               id="invoice-issued"
@@ -288,21 +291,21 @@ function InvoiceForm({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="invoice-status" className="text-sm font-medium">Estado</label>
+          <label htmlFor="invoice-status" className="text-sm font-medium">{t('common.status')}</label>
           <select
             id="invoice-status"
             className={selectClassName}
             {...register('status')}
           >
             {STATUS_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
+              <option key={o.value} value={o.value}>{t(o.labelKey)}</option>
             ))}
           </select>
         </div>
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="invoice-notes" className="text-sm font-medium">
-            Notas <span className="text-muted-foreground text-xs">(opcional)</span>
+            {t('invoice_sheet.field.notes')} <span className="text-muted-foreground text-xs">{t('common.optional')}</span>
           </label>
           <textarea
             id="invoice-notes"
@@ -315,10 +318,10 @@ function InvoiceForm({
 
       <SheetFooter className="px-6 pb-6 pt-0 flex-row justify-end gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
+          {t('sheet.cancel')}
         </Button>
         <Button type="submit" form="invoice-form" disabled={isSubmitting}>
-          {mode === 'create' ? 'Crear recibo' : 'Guardar cambios'}
+          {mode === 'create' ? t('invoice_sheet.submit_create') : t('invoice_sheet.submit_edit')}
         </Button>
       </SheetFooter>
     </>
@@ -326,6 +329,8 @@ function InvoiceForm({
 }
 
 export function InvoiceSheet({ open, onOpenChange, mode, invoice, students, onSubmit }: Props) {
+  const { t } = useTranslation();
+
   function handleSubmit(data: InvoiceFormValues) {
     onSubmit(data);
     onOpenChange(false);
@@ -337,11 +342,11 @@ export function InvoiceSheet({ open, onOpenChange, mode, invoice, students, onSu
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
         <SheetHeader className="px-6 pt-6 pb-0">
-          <SheetTitle>{mode === 'create' ? 'Nuevo recibo' : 'Editar recibo'}</SheetTitle>
+          <SheetTitle>{mode === 'create' ? t('invoice_sheet.title_create') : t('invoice_sheet.title_edit')}</SheetTitle>
           <SheetDescription>
             {mode === 'create'
-              ? 'Crea un recibo manual o usa "Generar mes" desde la lista.'
-              : 'Modifica los datos del recibo.'}
+              ? t('invoice_sheet.desc_create_full')
+              : t('invoice_sheet.desc_edit')}
           </SheetDescription>
         </SheetHeader>
 

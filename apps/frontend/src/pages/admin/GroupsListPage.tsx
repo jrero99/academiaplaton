@@ -28,6 +28,7 @@ import {
 import { MOCK_TEACHERS } from '@/features/teachers/data/mock-teachers';
 import { MOCK_STUDENTS } from '@/features/students/data/mock-students';
 import type { GroupDto } from '@academiaplaton/shared';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 const ORG_ID = '00000000-0000-0000-0000-000000000001';
 const CENTER_ID = '00000000-0000-0000-0000-0000000000c1';
@@ -67,6 +68,7 @@ function includesCi(haystack: string | null | undefined, needle: string): boolea
 export function GroupsListPage() {
   const currentUser = useCurrentUser();
   const scopedCenter = scopedCenterId(currentUser);
+  const { t, locale } = useTranslation();
 
   const [groups, setGroups] = useState<GroupDto[]>(MOCK_GROUPS);
   const [filters, setFilters] = useState<FilterState>(initialFilters);
@@ -87,8 +89,8 @@ export function GroupsListPage() {
     for (const g of groups) {
       if (g.subject) set.add(g.subject);
     }
-    return Array.from(set).sort((a, b) => a.localeCompare(b, 'es'));
-  }, [groups]);
+    return Array.from(set).sort((a, b) => a.localeCompare(b, locale));
+  }, [groups, locale]);
 
   const hasActiveFilters =
     filters.search !== '' ||
@@ -190,58 +192,58 @@ export function GroupsListPage() {
   return (
     <>
       <PageHeader
-        title="Grupos"
-        breadcrumbs={[{ label: 'Admin', to: '/admin' }, { label: 'Grupos' }]}
+        title={t('groups.title')}
+        breadcrumbs={[{ label: t('breadcrumb.admin'), to: '/admin' }, { label: t('groups.title') }]}
       />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
         <Button onClick={openCreate}>
           <Plus className="h-4 w-4" />
-          Nuevo grupo
+          {t('groups.new')}
         </Button>
       </div>
 
       <FilterBar hasActive={hasActiveFilters} onClear={clearFilters}>
-        <FilterField label="Buscador">
+        <FilterField label={t('filterbar.search_label')}>
           <input
             type="text"
             className={filterInputClass}
             value={filters.search}
             onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
-            placeholder="Nombre, asignatura, descripción..."
-            aria-label="Buscador general"
+            placeholder={t('groups.filter.placeholder_search')}
+            aria-label={t('common.search_general_aria')}
           />
         </FilterField>
 
-        <FilterField label="Grupo">
+        <FilterField label={t('groups.col.group')}>
           <input
             type="text"
             className={filterInputClass}
             value={filters.name}
             onChange={(e) => setFilters((f) => ({ ...f, name: e.target.value }))}
-            aria-label="Filtrar por nombre de grupo"
+            aria-label={t('groups.filter.name_aria')}
           />
         </FilterField>
 
-        <FilterField label="Descripción">
+        <FilterField label={t('groups.col.description')}>
           <input
             type="text"
             className={filterInputClass}
             value={filters.description}
             onChange={(e) => setFilters((f) => ({ ...f, description: e.target.value }))}
-            aria-label="Filtrar por descripción"
+            aria-label={t('groups.filter.description_aria')}
           />
         </FilterField>
 
         {accessibleCenters.length > 1 && (
-          <FilterField label="Academia">
+          <FilterField label={t('common.center')}>
             <select
               className={filterSelectClass}
               value={filters.centerId}
               onChange={(e) => setFilters((f) => ({ ...f, centerId: e.target.value }))}
-              aria-label="Filtrar por academia"
+              aria-label={t('common.center_filter_aria')}
             >
-              <option value="">Todas</option>
+              <option value="">{t('groups.filter.center_all')}</option>
               {accessibleCenters.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -249,48 +251,48 @@ export function GroupsListPage() {
           </FilterField>
         )}
 
-        <FilterField label="Asignatura">
+        <FilterField label={t('groups.col.subject')}>
           <select
             className={filterSelectClass}
             value={filters.subject}
             onChange={(e) => setFilters((f) => ({ ...f, subject: e.target.value }))}
-            aria-label="Filtrar por asignatura"
+            aria-label={t('groups.filter.subject_aria')}
           >
-            <option value="">Todas</option>
+            <option value="">{t('common.all_f')}</option>
             {subjectOptions.map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
         </FilterField>
 
-        <FilterField label="Profesor titular">
+        <FilterField label={t('groups.col.head_teacher')}>
           <select
             className={filterSelectClass}
             value={filters.teacherId}
             onChange={(e) => setFilters((f) => ({ ...f, teacherId: e.target.value }))}
-            aria-label="Filtrar por profesor titular"
+            aria-label={t('groups.filter.teacher_aria')}
           >
-            <option value="">Todos</option>
-            {MOCK_TEACHERS.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.firstName} {t.lastName}
+            <option value="">{t('groups.filter.teacher_all')}</option>
+            {MOCK_TEACHERS.map((teacher) => (
+              <option key={teacher.id} value={teacher.id}>
+                {teacher.firstName} {teacher.lastName}
               </option>
             ))}
           </select>
         </FilterField>
 
-        <FilterField label="Estado">
+        <FilterField label={t('common.status')}>
           <select
             className={filterSelectClass}
             value={filters.status}
             onChange={(e) =>
               setFilters((f) => ({ ...f, status: e.target.value as StatusFilter }))
             }
-            aria-label="Filtrar por estado"
+            aria-label={t('common.filter_by_status_aria')}
           >
-            <option value="any">Cualquiera</option>
-            <option value="active">Activos</option>
-            <option value="inactive">Inactivos</option>
+            <option value="any">{t('common.any')}</option>
+            <option value="active">{t('common.actives_m')}</option>
+            <option value="inactive">{t('common.inactives_m')}</option>
           </select>
         </FilterField>
       </FilterBar>
@@ -301,20 +303,20 @@ export function GroupsListPage() {
             <TableHeader>
               <TableRow className="bg-muted hover:bg-muted">
                 <TableHead className="w-12 text-muted-foreground hidden sm:table-cell">#</TableHead>
-                <TableHead>Grupo</TableHead>
-                <TableHead className="hidden sm:table-cell">Asignatura</TableHead>
-                <TableHead className="hidden md:table-cell">Descripción</TableHead>
-                <TableHead className="hidden md:table-cell">Profesor titular</TableHead>
-                <TableHead className="hidden sm:table-cell">Alumnos</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="w-24 text-right">Acciones</TableHead>
+                <TableHead>{t('groups.col.group')}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('groups.col.subject')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('groups.col.description')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('groups.col.head_teacher')}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('groups.col.students')}</TableHead>
+                <TableHead>{t('common.status')}</TableHead>
+                <TableHead className="w-24 text-right">{t('common.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                    No hay grupos que coincidan con la búsqueda.
+                    {t('groups.empty')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -339,7 +341,7 @@ export function GroupsListPage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant={g.active ? 'default' : 'secondary'}>
-                          {g.active ? 'Activo' : 'Inactivo'}
+                          {g.active ? t('groups.status.active') : t('groups.status.inactive')}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -347,7 +349,7 @@ export function GroupsListPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            aria-label={`Editar grupo ${g.name}`}
+                            aria-label={t('groups.action.edit_group', { name: g.name })}
                             onClick={() => openEdit(g)}
                           >
                             <Pencil className="h-4 w-4" />
@@ -355,7 +357,7 @@ export function GroupsListPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            aria-label={`Borrar grupo ${g.name}`}
+                            aria-label={t('groups.action.delete_group', { name: g.name })}
                             className="hover:text-destructive"
                             onClick={() => handleDelete(g.id)}
                           >
@@ -380,7 +382,7 @@ export function GroupsListPage() {
         teachers={
           scopedCenter === null
             ? MOCK_TEACHERS
-            : MOCK_TEACHERS.filter((t) => t.centerId === scopedCenter)
+            : MOCK_TEACHERS.filter((teacher) => teacher.centerId === scopedCenter)
         }
         students={
           scopedCenter === null

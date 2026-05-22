@@ -38,7 +38,7 @@ export function AdminSidebar() {
   return (
     <aside className="hidden lg:flex w-64 shrink-0 flex-col bg-zinc-950 text-zinc-300 border-r border-zinc-900">
       <div className="h-16 flex items-center px-6 bg-white">
-        <img src={platoLogo} alt="Plató" className="h-10 w-auto" />
+        <img src={platoLogo} alt={t('app.name')} className="h-10 w-auto" />
       </div>
 
       <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-6">
@@ -46,7 +46,7 @@ export function AdminSidebar() {
         {settingsItems.length > 0 && (
           <div>
             <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
-              Configuración
+              {t('nav.section_settings')}
             </p>
             <AdminNavGroup items={settingsItems} />
           </div>
@@ -68,7 +68,7 @@ export function AdminSidebar() {
           className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-zinc-400 hover:bg-zinc-900 hover:text-white transition-colors"
         >
           <LogOut className="h-4 w-4 shrink-0" />
-          <span>Cerrar sesión</span>
+          <span>{t('topbar.logout')}</span>
         </button>
       </div>
     </aside>

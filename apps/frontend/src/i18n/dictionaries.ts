@@ -76,6 +76,9 @@ const ca: Dict = {
   'common.actions': 'Accions',
   'common.placeholder_search_name_email_course': 'Nom, email, curs...',
   'common.placeholder_search_name_email_phone': 'Nom, email, telèfon...',
+  'common.address': 'Adreça',
+  'common.close': 'Tancar',
+  'common.open_record': 'Obrir',
 
   // ------------------------------------------------------------------- nav
   'nav.dashboard': 'Tauler',
@@ -300,9 +303,9 @@ const ca: Dict = {
   'calendar.new_session': 'Nova sessió',
   'calendar.small_screen_hint': "Per una millor experiència, gira el dispositiu o utilitza una pantalla més gran.",
   'calendar.week_hint_teacher': 'Vista de només lectura: aquí veus únicament les sessions que tens assignades.',
-  'calendar.week_hint_admin': 'Clic en una cel·la buida per crear una sessió. Clic en un bloc per editar-la o eliminar-la. Arrossega un bloc a un altre slot per moure’l (snap a 15 min).',
+  'calendar.week_hint_admin': "Clic en una cel·la buida per crear una sessió. Clic en un bloc per editar-la o eliminar-la. Arrossega un bloc a un altre slot per moure'l (snap a 15 min).",
   'calendar.month_hint': 'Clic en qualsevol dia per anar a la vista setmanal corresponent.',
-  'calendar.year_hint': 'Intensitat per dia = nombre de sessions. Clic al títol d’un mes per obrir-lo; clic en un dia per anar a la seva setmana.',
+  'calendar.year_hint': "Intensitat per dia = nombre de sessions. Clic al títol d'un mes per obrir-lo; clic en un dia per anar a la seva setmana.",
   'calendar.error.group_not_found': "Grup no trobat al centre seleccionat.",
   'calendar.error.overlap_group': 'Solapament amb sessió del mateix grup ({group}, {start}–{end} el {date}).',
   'calendar.error.overlap_teacher': 'Solapament amb sessió del mateix professor ({group}, {start}–{end} el {date}).',
@@ -359,7 +362,26 @@ const ca: Dict = {
   'teacher_sheet.desc_create': 'Omple les dades del nou professor.',
   'teacher_sheet.desc_edit': 'Modifica les dades del professor.',
   'teacher_sheet.field.active': 'Actiu',
+  'teacher_sheet.field.active_label': 'Professor actiu',
   'teacher_sheet.field.center': 'Acadèmia',
+  'teacher_sheet.field.color_calendar': 'Color al calendari',
+  'teacher_sheet.field.color_remove': 'Treure',
+  'teacher_sheet.field.color_hint_no_center': "Selecciona primer una acadèmia per triar color.",
+  'teacher_sheet.field.color_aria': 'Color del professor',
+  'teacher_sheet.field.color_taken_aria': '{label} (ja en ús en aquesta acadèmia)',
+  'teacher_sheet.field.color_taken_title': '{label} — ja en ús en aquesta acadèmia',
+  'teacher_sheet.field.color_no_free': "No queden colors lliures en aquesta acadèmia.",
+  'teacher_sheet.access.title': 'Accés a la plataforma',
+  'teacher_sheet.access.hint': 'Genera una contrasenya temporal i envia-la al correu del professor.',
+  'teacher_sheet.access.regenerate_btn': 'Regenerar contrasenya i enviar al correu',
+  'teacher_sheet.access.confirm_question': "Confirmes l'enviament?",
+  'teacher_sheet.access.confirm_detail_prefix': "S'enviarà un correu a",
+  'teacher_sheet.access.confirm_detail_suffix': 'amb una contrasenya temporal. La contrasenya actual quedarà invalidada.',
+  'teacher_sheet.access.confirm_yes': 'Sí, enviar',
+  'teacher_sheet.access.sending': 'Enviant correu...',
+  'teacher_sheet.access.sent_title': 'Correu enviat',
+  'teacher_sheet.access.sent_detail_prefix': 'Hem enviat un correu a',
+  'teacher_sheet.access.sent_detail_suffix': 'amb una contrasenya temporal.',
   'teacher_sheet.submit_create': 'Crear professor',
   'teacher_sheet.submit_edit': 'Desar canvis',
 
@@ -367,13 +389,28 @@ const ca: Dict = {
   'group_sheet.title_create': 'Nou grup',
   'group_sheet.title_edit': 'Editar grup',
   'group_sheet.desc_create': 'Omple les dades del nou grup.',
-  'group_sheet.desc_edit': 'Modifica les dades del grup.',
+  'group_sheet.desc_create_full': 'Crea un grup i assigna professor titular i alumnes.',
+  'group_sheet.desc_edit': 'Modifica les dades del grup i ajusta les seves assignacions.',
+  'group_sheet.field.name': 'Nom del grup',
   'group_sheet.field.subject': 'Assignatura',
   'group_sheet.field.description': 'Descripció',
+  'group_sheet.field.description_placeholder': 'Nivell, continguts, freqüència... (màx. 240 caràcters)',
   'group_sheet.field.teacher': 'Professor titular',
+  'group_sheet.field.teacher_placeholder': '— Selecciona un professor —',
+  'group_sheet.field.teacher_inactive_suffix': ' (inactiu)',
+  'group_sheet.field.teacher_substitution_hint': 'Les substitucions puntuals es registraran al calendari (Fase 2), no aquí.',
   'group_sheet.field.active': 'Actiu',
+  'group_sheet.field.active_label': 'Grup actiu',
   'group_sheet.field.notes': 'Notes',
   'group_sheet.field.students': 'Alumnes',
+  'group_sheet.field.students_assigned': 'Alumnes assignats',
+  'group_sheet.field.students_selected': '{count} seleccionat{suffix}',
+  'group_sheet.field.students_filter_placeholder': 'Filtrar alumnes...',
+  'group_sheet.field.students_empty': 'No hi ha alumnes.',
+  'group_sheet.err.name_required': 'El nom del grup és obligatori',
+  'group_sheet.err.teacher_required': 'Selecciona un professor titular',
+  'group_sheet.tab.data': 'Dades',
+  'group_sheet.tab.attendance': 'Assistència',
   'group_sheet.submit_create': 'Crear grup',
   'group_sheet.submit_edit': 'Desar canvis',
 
@@ -383,8 +420,13 @@ const ca: Dict = {
   'center_sheet.desc_create': 'Omple les dades de la nova acadèmia.',
   'center_sheet.desc_edit': "Modifica les dades de l'acadèmia.",
   'center_sheet.field.slug': 'Identificador URL',
+  'center_sheet.field.slug_hint': "S'usa en URLs i referències internes. Només minúscules, números i guions.",
   'center_sheet.field.address': 'Adreça',
   'center_sheet.field.active': 'Activa',
+  'center_sheet.field.active_label': 'Acadèmia activa',
+  'center_sheet.err.name_required': 'El nom és obligatori',
+  'center_sheet.err.slug_required': "L'identificador URL és obligatori",
+  'center_sheet.err.slug_format': 'Només minúscules, números i guions',
   'center_sheet.submit_create': 'Crear acadèmia',
   'center_sheet.submit_edit': 'Desar canvis',
 
@@ -392,14 +434,19 @@ const ca: Dict = {
   'invoice_sheet.title_create': 'Nou rebut',
   'invoice_sheet.title_edit': 'Editar rebut',
   'invoice_sheet.desc_create': 'Omple les dades del nou rebut.',
+  'invoice_sheet.desc_create_full': 'Crea un rebut manual o usa "Generar mes" des de la llista.',
   'invoice_sheet.desc_edit': 'Modifica les dades del rebut.',
   'invoice_sheet.field.number': 'Número',
   'invoice_sheet.field.student': 'Alumne',
+  'invoice_sheet.field.student_placeholder': '— Selecciona un alumne —',
   'invoice_sheet.field.concept': 'Concepte',
+  'invoice_sheet.field.concept_placeholder': 'Quota maig 2026',
   'invoice_sheet.field.amount': 'Import',
+  'invoice_sheet.field.amount_eur': 'Import (€)',
   'invoice_sheet.field.period_month': 'Mes',
   'invoice_sheet.field.period_year': 'Any',
   'invoice_sheet.field.due_date': 'Venciment',
+  'invoice_sheet.field.due_date_label': 'Data de venciment',
   'invoice_sheet.field.issued_at': 'Cobrament enviat',
   'invoice_sheet.field.notes': 'Notes',
   'invoice_sheet.submit_create': 'Crear rebut',
@@ -462,6 +509,85 @@ const ca: Dict = {
   // -------------------------------------------- week calendar (session blocks)
   'week_calendar.session_deleted': 'Grup eliminat',
   'week_calendar.session_label': 'Sessió',
+
+  // ------------------------------------------------- attendance sheet
+  'attendance.sheet.present': 'Present',
+  'attendance.sheet.absent': 'Absent',
+  'attendance.sheet.absent_justified': 'Absent justificat',
+  'attendance.sheet.justified_label': 'Justificada',
+  'attendance.sheet.unjustified': 'Sense justificar',
+  'attendance.sheet.mark_justified_aria': 'Marcar absència de {name} com a justificada',
+  'attendance.sheet.justification_reason': 'Motiu',
+  'attendance.sheet.justification_optional': '(opcional, max. {max})',
+  'attendance.sheet.no_students': 'No hi ha alumnes assignats a aquest grup.',
+  'attendance.sheet.cancel': 'Cancel·lar',
+  'attendance.sheet.save': 'Desar llista',
+  'attendance.sheet.saving': 'Desant...',
+  'attendance.sheet.readonly_hint': 'Vista de només lectura.',
+  'attendance.sheet.summary_aria': "Resum d'assistència",
+  'attendance.sheet.student_attendance_aria': 'Assistència de {name}',
+  'attendance.sheet.present_count': '{count} present{suffix}',
+  'attendance.sheet.absent_count': '{count} absent{suffix}',
+  'attendance.sheet.justified_count': '{count} justificada{suffix}',
+
+  // -------------------------------------------- attendance history panel
+  'attendance.history.from': 'Des de',
+  'attendance.history.to': 'Fins a',
+  'attendance.history.only_absences': 'Només amb absències',
+  'attendance.history.clear': 'Netejar filtres',
+  'attendance.history.no_sessions': "Encara no hi ha sessions registrades per a aquest grup. Passa llista des del Calendari.",
+  'attendance.history.no_match': 'Cap sessió coincideix amb els filtres aplicats.',
+  'attendance.history.col_date': 'Data',
+  'attendance.history.col_schedule': 'Horari',
+  'attendance.history.col_teacher': 'Professor',
+  'attendance.history.col_present': 'Pres.',
+  'attendance.history.col_absent': 'Aus.',
+  'attendance.history.col_justified': 'Just.',
+  'attendance.history.expand_aria': "Veure detall d'assistència",
+  'attendance.history.collapse_aria': 'Tancar detall',
+  'attendance.history.expand_btn': 'Veure',
+  'attendance.history.collapse_btn': 'Tancar',
+  'attendance.history.showing': "{count} sessió{suffix}.",
+  'attendance.history.edit_hint': "Per editar l'assistència d'una sessió, ves al Calendari i fes clic sobre ella.",
+  'attendance.history.presences_label': 'Presents ({count})',
+  'attendance.history.justified_label': 'Absències justificades ({count})',
+  'attendance.history.unjustified_label': 'Absències sense justificar ({count})',
+  'attendance.history.none_m': 'Cap',
+  'attendance.history.none_f': 'Cap',
+
+  // ----------------------------------------------------- filterbar
+  'filterbar.clear': 'Netejar filtres',
+  'filterbar.search_label': 'Cercador',
+
+  // -------------------------------------------- leads list page
+  'leads.filter.status_all': 'Tots',
+  'leads.filter.course_all': 'Tots',
+
+  // -------------------------------------------- students list page
+  'students.filter.center_all': 'Totes',
+  'students.col.address': 'Adreça',
+
+  // -------------------------------------------- groups list page
+  'groups.filter.center_all': 'Totes',
+  'groups.filter.teacher_all': 'Tots',
+
+  // -------------------------------------------- centers list page
+  'centers.filter.status_any': 'Qualsevol',
+  'centers.filter.status_actives': 'Actives',
+  'centers.filter.status_inactives': 'Inactives',
+
+  // -------------------------------------------- teachers list page
+  'teachers.filter.center_all': 'Totes',
+
+  // -------------------------------------------- invoices list page
+  'invoices.filter.status_all': 'Tots',
+  'invoices.filter.month_all': 'Tots',
+  'invoices.filter.year_all': 'Tots',
+  'invoices.col.payment': 'Pagament',
+  'invoices.generated_concept_label': 'Quota {monthLabel} {year}',
+
+  // -------------------------------------------- sidebar
+  'sidebar.settings_section': 'Configuració',
 };
 
 const es: Dict = {
@@ -517,6 +643,9 @@ const es: Dict = {
   'common.actions': 'Acciones',
   'common.placeholder_search_name_email_course': 'Nombre, email, curso...',
   'common.placeholder_search_name_email_phone': 'Nombre, email, teléfono...',
+  'common.address': 'Dirección',
+  'common.close': 'Cerrar',
+  'common.open_record': 'Abrir',
 
   // ------------------------------------------------------------------- nav
   'nav.dashboard': 'Dashboard',
@@ -982,6 +1111,85 @@ const es: Dict = {
   // -------------------------------------------- week calendar (session blocks)
   'week_calendar.session_deleted': 'Grupo eliminado',
   'week_calendar.session_label': 'Sesión',
+
+  // ------------------------------------------------- attendance sheet
+  'attendance.sheet.present': 'Presente',
+  'attendance.sheet.absent': 'Ausente',
+  'attendance.sheet.absent_justified': 'Ausente justificado',
+  'attendance.sheet.justified_label': 'Justificada',
+  'attendance.sheet.unjustified': 'Sin justificar',
+  'attendance.sheet.mark_justified_aria': 'Marcar ausencia de {name} como justificada',
+  'attendance.sheet.justification_reason': 'Motivo',
+  'attendance.sheet.justification_optional': '(opcional, max. {max})',
+  'attendance.sheet.no_students': 'No hay alumnos asignados a este grupo.',
+  'attendance.sheet.cancel': 'Cancelar',
+  'attendance.sheet.save': 'Guardar lista',
+  'attendance.sheet.saving': 'Guardando...',
+  'attendance.sheet.readonly_hint': 'Vista de solo lectura.',
+  'attendance.sheet.summary_aria': 'Resumen de asistencia',
+  'attendance.sheet.student_attendance_aria': 'Asistencia de {name}',
+  'attendance.sheet.present_count': '{count} presente{suffix}',
+  'attendance.sheet.absent_count': '{count} ausente{suffix}',
+  'attendance.sheet.justified_count': '{count} justificada{suffix}',
+
+  // -------------------------------------------- attendance history panel
+  'attendance.history.from': 'Desde',
+  'attendance.history.to': 'Hasta',
+  'attendance.history.only_absences': 'Solo con ausencias',
+  'attendance.history.clear': 'Limpiar filtros',
+  'attendance.history.no_sessions': 'Todavía no hay sesiones registradas para este grupo. Pasa lista desde el Calendario.',
+  'attendance.history.no_match': 'Ninguna sesión coincide con los filtros aplicados.',
+  'attendance.history.col_date': 'Fecha',
+  'attendance.history.col_schedule': 'Horario',
+  'attendance.history.col_teacher': 'Profesor',
+  'attendance.history.col_present': 'Pres.',
+  'attendance.history.col_absent': 'Aus.',
+  'attendance.history.col_justified': 'Just.',
+  'attendance.history.expand_aria': 'Ver detalle de asistencia',
+  'attendance.history.collapse_aria': 'Cerrar detalle',
+  'attendance.history.expand_btn': 'Ver',
+  'attendance.history.collapse_btn': 'Cerrar',
+  'attendance.history.showing': '{count} sesión{suffix}.',
+  'attendance.history.edit_hint': 'Para editar la asistencia de una sesión, ve al Calendario y haz clic sobre ella.',
+  'attendance.history.presences_label': 'Presentes ({count})',
+  'attendance.history.justified_label': 'Ausencias justificadas ({count})',
+  'attendance.history.unjustified_label': 'Ausencias sin justificar ({count})',
+  'attendance.history.none_m': 'Ninguno',
+  'attendance.history.none_f': 'Ninguna',
+
+  // ----------------------------------------------------- filterbar
+  'filterbar.clear': 'Limpiar filtros',
+  'filterbar.search_label': 'Buscador',
+
+  // -------------------------------------------- leads list page
+  'leads.filter.status_all': 'Todos',
+  'leads.filter.course_all': 'Todos',
+
+  // -------------------------------------------- students list page
+  'students.filter.center_all': 'Todas',
+  'students.col.address': 'Dirección',
+
+  // -------------------------------------------- groups list page
+  'groups.filter.center_all': 'Todas',
+  'groups.filter.teacher_all': 'Todos',
+
+  // -------------------------------------------- centers list page
+  'centers.filter.status_any': 'Cualquiera',
+  'centers.filter.status_actives': 'Activas',
+  'centers.filter.status_inactives': 'Inactivas',
+
+  // -------------------------------------------- teachers list page
+  'teachers.filter.center_all': 'Todas',
+
+  // -------------------------------------------- invoices list page
+  'invoices.filter.status_all': 'Todos',
+  'invoices.filter.month_all': 'Todos',
+  'invoices.filter.year_all': 'Todos',
+  'invoices.col.payment': 'Pago',
+  'invoices.generated_concept_label': 'Cuota {monthLabel} {year}',
+
+  // -------------------------------------------- sidebar
+  'sidebar.settings_section': 'Configuración',
 };
 
 const dictionaries: Record<Language, Dict> = { ca, es };

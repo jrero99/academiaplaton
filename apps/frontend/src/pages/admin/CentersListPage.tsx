@@ -23,6 +23,7 @@ import {
   CenterSheet,
   type CenterFormValues,
 } from '@/features/centers/components/CenterSheet';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 const ORG_ID = '00000000-0000-0000-0000-000000000001';
 
@@ -48,6 +49,7 @@ function includesCi(haystack: string | null | undefined, needle: string): boolea
 }
 
 export function CentersListPage() {
+  const { t } = useTranslation();
   const [centers, setCenters] = useState<CenterDto[]>(MOCK_CENTERS);
   const [filters, setFilters] = useState(initialFilters);
   const [sheet, setSheet] = useState<SheetState>({ open: false });
@@ -135,79 +137,79 @@ export function CentersListPage() {
   return (
     <>
       <PageHeader
-        title="Academias"
-        breadcrumbs={[{ label: 'Admin', to: '/admin' }, { label: 'Academias' }]}
+        title={t('centers.title')}
+        breadcrumbs={[{ label: t('breadcrumb.admin'), to: '/admin' }, { label: t('centers.title') }]}
       />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
         <Button onClick={openCreate}>
           <Plus className="h-4 w-4" />
-          Nueva academia
+          {t('centers.new')}
         </Button>
       </div>
 
       <FilterBar hasActive={hasActiveFilters} onClear={clearFilters}>
-        <FilterField label="Buscador">
+        <FilterField label={t('filterbar.search_label')}>
           <input
             type="text"
             className={filterInputClass}
             value={filters.search}
             onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
-            placeholder="Nombre, dirección, teléfono..."
-            aria-label="Buscador general"
+            placeholder={t('centers.filter.placeholder_search')}
+            aria-label={t('common.search_general_aria')}
           />
         </FilterField>
 
-        <FilterField label="Nombre">
+        <FilterField label={t('common.name')}>
           <input
             type="text"
             className={filterInputClass}
             value={filters.name}
             onChange={(e) => setFilters((f) => ({ ...f, name: e.target.value }))}
-            aria-label="Filtrar por nombre"
+            aria-label={t('common.filter_by_name_aria')}
           />
         </FilterField>
 
-        <FilterField label="Identificador URL">
+        <FilterField label={t('centers.col.url_slug')}>
           <input
             type="text"
             className={filterInputClass}
             value={filters.slug}
             onChange={(e) => setFilters((f) => ({ ...f, slug: e.target.value }))}
-            aria-label="Filtrar por identificador URL"
+            aria-label={t('centers.filter.slug_aria')}
           />
         </FilterField>
 
-        <FilterField label="Dirección">
+        <FilterField label={t('common.address')}>
           <input
             type="text"
             className={filterInputClass}
             value={filters.address}
             onChange={(e) => setFilters((f) => ({ ...f, address: e.target.value }))}
-            aria-label="Filtrar por dirección"
+            aria-label={t('centers.filter.address_aria')}
           />
         </FilterField>
 
-        <FilterField label="Teléfono">
+        <FilterField label={t('common.phone')}>
           <input
             type="text"
             className={filterInputClass}
             value={filters.phone}
             onChange={(e) => setFilters((f) => ({ ...f, phone: e.target.value }))}
-            aria-label="Filtrar por teléfono"
+            aria-label={t('common.filter_by_phone_aria')}
           />
         </FilterField>
 
-        <FilterField label="Estado">
+        <FilterField label={t('common.status')}>
           <select
             className={filterSelectClass}
             value={filters.status}
             onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value as StatusFilter }))}
-            aria-label="Filtrar por estado"
+            aria-label={t('common.filter_by_status_aria')}
           >
-            <option value="any">Cualquiera</option>
-            <option value="active">Activas</option>
-            <option value="inactive">Inactivas</option>
+            <option value="any">{t('centers.filter.status_any')}</option>
+            <option value="active">{t('centers.filter.status_actives')}</option>
+            <option value="inactive">{t('centers.filter.status_inactives')}</option>
           </select>
         </FilterField>
       </FilterBar>
@@ -218,19 +220,19 @@ export function CentersListPage() {
             <TableHeader>
               <TableRow className="bg-muted hover:bg-muted">
                 <TableHead className="w-16 text-muted-foreground hidden sm:table-cell">#</TableHead>
-                <TableHead>Nombre</TableHead>
-                <TableHead className="hidden sm:table-cell">Identificador URL</TableHead>
-                <TableHead className="hidden md:table-cell">Dirección</TableHead>
-                <TableHead className="hidden md:table-cell">Teléfono</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="w-24 text-right">Acciones</TableHead>
+                <TableHead>{t('common.name')}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('centers.col.url_slug')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('common.address')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('common.phone')}</TableHead>
+                <TableHead>{t('common.status')}</TableHead>
+                <TableHead className="w-24 text-right">{t('common.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                    No hay academias que coincidan con la búsqueda.
+                    {t('centers.empty')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -245,7 +247,7 @@ export function CentersListPage() {
                     <TableCell className="text-muted-foreground hidden md:table-cell">{c.phone ?? '—'}</TableCell>
                     <TableCell>
                       <Badge variant={c.active ? 'default' : 'secondary'}>
-                        {c.active ? 'Activa' : 'Inactiva'}
+                        {c.active ? t('centers.status.active') : t('centers.status.inactive')}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -253,7 +255,7 @@ export function CentersListPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          aria-label={`Editar ${c.name}`}
+                          aria-label={t('centers.action.edit_center', { name: c.name })}
                           onClick={() => openEdit(c)}
                         >
                           <Pencil className="h-4 w-4" />
@@ -261,7 +263,7 @@ export function CentersListPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          aria-label={`Borrar ${c.name}`}
+                          aria-label={t('centers.action.delete_center', { name: c.name })}
                           className="hover:text-destructive"
                           onClick={() => handleDelete(c.id)}
                         >

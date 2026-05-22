@@ -16,36 +16,13 @@ import type { InvoiceDto, StudentDto } from '@academiaplaton/shared';
 const BURGUNDY = '#691a37';
 const CREAM = '#f4cea1';
 
-const eurFmt = new Intl.NumberFormat('es-ES', {
-  style: 'currency',
-  currency: 'EUR',
-});
-
-const dateFmt = new Intl.DateTimeFormat('es-ES', {
-  day: '2-digit',
-  month: '2-digit',
-  year: 'numeric',
-});
-
-const longDateFmt = new Intl.DateTimeFormat('es-ES', {
-  day: '2-digit',
-  month: 'long',
-  year: 'numeric',
-});
-
-const STATUS_LABEL: Record<InvoiceDto['status'], string> = {
-  pending: 'Pendiente',
-  sent: 'Enviado',
-  paid: 'Pagado',
-  overdue: 'Vencido',
-  cancelled: 'Anulado',
-};
-
 interface OpenInvoicePdfParams {
   invoice: InvoiceDto;
   student: StudentDto;
   organizationName?: string;
   centerName?: string;
+  t: (key: string, params?: Record<string, string | number>) => string;
+  locale: string;
 }
 
 function escape(s: string | number | undefined | null): string {
@@ -57,13 +34,25 @@ function escape(s: string | number | undefined | null): string {
     .replace(/"/g, '&quot;');
 }
 
-function buildHtml({ invoice, student, organizationName, centerName }: OpenInvoicePdfParams): string {
+function buildHtml({ invoice, student, organizationName, centerName, t, locale }: OpenInvoicePdfParams): string {
   const origin = window.location.origin;
   const logoUrl = new URL(platoLogo, origin).toString();
   const fontRegular = new URL(montserratRegular, origin).toString();
   const fontMedium = new URL(montserratMedium, origin).toString();
   const fontSemiBold = new URL(montserratSemiBold, origin).toString();
   const fontBold = new URL(montserratBold, origin).toString();
+
+  const eurFmt = new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR' });
+  const dateFmt = new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const longDateFmt = new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'long', year: 'numeric' });
+
+  const STATUS_LABEL: Record<InvoiceDto['status'], string> = {
+    pending:   t('invoices.status.pending'),
+    sent:      t('invoices.status.sent'),
+    paid:      t('invoices.status.paid'),
+    overdue:   t('invoices.status.overdue'),
+    cancelled: t('invoices.status.cancelled'),
+  };
 
   const orgName = organizationName ?? 'Plató Centre d’estudis';
   const studentFullName = `${student.firstName} ${student.lastName}`.trim();
@@ -76,10 +65,10 @@ function buildHtml({ invoice, student, organizationName, centerName }: OpenInvoi
   );
 
   return `<!doctype html>
-<html lang="es">
+<html lang="${escape(locale.split('-')[0] ?? 'ca')}">
 <head>
 <meta charset="utf-8" />
-<title>Recibo ${escape(invoice.number)} — ${escape(orgName)}</title>
+<title>${escape(t('invoices.pdf.title'))} ${escape(invoice.number)} — ${escape(orgName)}</title>
 <style>
   @font-face {
     font-family: 'Montserrat';
@@ -266,8 +255,8 @@ function buildHtml({ invoice, student, organizationName, centerName }: OpenInvoi
 </head>
 <body>
   <div class="toolbar">
-    <button class="btn secondary" onclick="window.close()">Cerrar</button>
-    <button class="btn" onclick="window.print()">Imprimir / Guardar como PDF</button>
+    <button class="btn secondary" onclick="window.close()">${escape(t('invoices.pdf.close'))}</button>
+    <button class="btn" onclick="window.print()">${escape(t('invoices.pdf.print'))}</button>
   </div>
 
   <div class="sheet">
@@ -278,20 +267,20 @@ function buildHtml({ invoice, student, organizationName, centerName }: OpenInvoi
         ${centerName ? `<div class="center">${escape(centerName)}</div>` : ''}
       </div>
       <div class="doc-meta">
-        <span class="doc-label">Recibo</span>
+        <span class="doc-label">${escape(t('invoices.pdf.title'))}</span>
         <div class="doc-number">${escape(invoice.number)}</div>
-        <div class="doc-date">Emitido el ${escape(issueDateLong)}</div>
+        <div class="doc-date">${escape(t('invoices.pdf.issued_on', { date: issueDateLong }))}</div>
       </div>
     </header>
 
     <section class="parties">
       <div>
-        <div class="party-label">Emisor</div>
+        <div class="party-label">${escape(t('invoices.pdf.issuer'))}</div>
         <div class="party-name">${escape(orgName)}</div>
         ${centerName ? `<div class="party-line">${escape(centerName)}</div>` : ''}
       </div>
       <div>
-        <div class="party-label">Alumno / Pagador</div>
+        <div class="party-label">${escape(t('invoices.pdf.payer'))}</div>
         <div class="party-name">${escape(studentFullName)}</div>
         ${student.email ? `<div class="party-line">${escape(student.email)}</div>` : ''}
         ${student.phone ? `<div class="party-line">${escape(student.phone)}</div>` : ''}
@@ -301,15 +290,15 @@ function buildHtml({ invoice, student, organizationName, centerName }: OpenInvoi
 
     <section class="dates">
       <div class="cell">
-        <div class="label">Fecha de vencimiento</div>
+        <div class="label">${escape(t('invoices.pdf.due_date'))}</div>
         <div class="value">${escape(dueDateText)}</div>
       </div>
       <div class="cell">
-        <div class="label">Cobro enviado</div>
+        <div class="label">${escape(t('invoices.pdf.sent_at'))}</div>
         <div class="value">${escape(issuedAtText)}</div>
       </div>
       <div class="cell">
-        <div class="label">Estado</div>
+        <div class="label">${escape(t('invoices.pdf.status_label'))}</div>
         <div class="badge">${escape(STATUS_LABEL[invoice.status])}</div>
       </div>
     </section>
@@ -317,8 +306,8 @@ function buildHtml({ invoice, student, organizationName, centerName }: OpenInvoi
     <table class="lines">
       <thead>
         <tr>
-          <th>Concepto</th>
-          <th class="amount">Importe</th>
+          <th>${escape(t('invoices.pdf.concept'))}</th>
+          <th class="amount">${escape(t('invoices.pdf.amount'))}</th>
         </tr>
       </thead>
       <tbody>
@@ -332,7 +321,7 @@ function buildHtml({ invoice, student, organizationName, centerName }: OpenInvoi
     <div class="totals">
       <div class="box">
         <div class="row total">
-          <span>Total</span>
+          <span>${escape(t('invoices.pdf.total'))}</span>
           <span>${escape(eurFmt.format(invoice.amount))}</span>
         </div>
       </div>
@@ -342,7 +331,7 @@ function buildHtml({ invoice, student, organizationName, centerName }: OpenInvoi
 
     <footer class="bottom">
       <strong>${escape(orgName)}</strong><br />
-      Documento generado por la plataforma Plató — recibo ${escape(invoice.number)}
+      ${escape(t('invoices.pdf.footer', { number: invoice.number }))}
     </footer>
   </div>
 
@@ -363,12 +352,16 @@ function buildHtml({ invoice, student, organizationName, centerName }: OpenInvoi
 }
 
 export function openInvoicePdf(params: OpenInvoicePdfParams): void {
-  const w = window.open('', '_blank', 'width=900,height=1100');
+  const w = window.open('', '_blank', 'width=900,height=1100,noopener');
   if (!w) {
     // Popup bloqueado — informamos al usuario sin romper la app.
-    alert('Activa los popups para generar el PDF del recibo.');
+    alert(params.t('invoices.pdf.popup_blocked'));
     return;
   }
+  // Defense-in-depth contra reverse tabnabbing: con URL '', algunos navegadores
+  // ignoran `noopener` en la feature string, así que cortamos explícitamente la
+  // referencia al opener. La ventana hija no podrá redirigir la app principal.
+  w.opener = null;
   w.document.open();
   w.document.write(buildHtml(params));
   w.document.close();

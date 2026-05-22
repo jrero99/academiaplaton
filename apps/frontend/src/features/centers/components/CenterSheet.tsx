@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { CenterDto } from '@academiaplaton/shared';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 const phoneRegex = /^[+\d\s\-().]{0,20}$/;
 
@@ -60,6 +61,7 @@ function CenterForm({
   onSubmit: (data: CenterFormValues) => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
   const initialActive = mode === 'edit' && center ? center.active : true;
   const [activeChecked, setActiveChecked] = useState(initialActive);
   const [slugTouched, setSlugTouched] = useState(mode === 'edit');
@@ -100,7 +102,7 @@ function CenterForm({
       >
         <div className="flex flex-col gap-1.5">
           <label htmlFor="center-name" className="text-sm font-medium">
-            Nombre <span aria-hidden="true" className="text-destructive">*</span>
+            {t('common.name')} <span aria-hidden="true" className="text-destructive">*</span>
           </label>
           <Input
             id="center-name"
@@ -114,7 +116,7 @@ function CenterForm({
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="center-slug" className="text-sm font-medium">
-            Identificador URL <span aria-hidden="true" className="text-destructive">*</span>
+            {t('center_sheet.field.slug')} <span aria-hidden="true" className="text-destructive">*</span>
           </label>
           <Input
             id="center-slug"
@@ -126,14 +128,14 @@ function CenterForm({
             <p role="alert" className="text-xs text-destructive">{errors.slug.message}</p>
           ) : (
             <p className="text-xs text-muted-foreground">
-              Se usa en URLs y referencias internas. Sólo minúsculas, números y guiones.
+              {t('center_sheet.field.slug_hint')}
             </p>
           )}
         </div>
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="center-address" className="text-sm font-medium">
-            Dirección <span className="text-muted-foreground text-xs">(opcional)</span>
+            {t('center_sheet.field.address')} <span className="text-muted-foreground text-xs">{t('common.optional')}</span>
           </label>
           <Input id="center-address" {...register('address')} />
         </div>
@@ -141,7 +143,7 @@ function CenterForm({
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="center-phone" className="text-sm font-medium">
-              Teléfono <span className="text-muted-foreground text-xs">(opcional)</span>
+              {t('common.phone')} <span className="text-muted-foreground text-xs">{t('common.optional')}</span>
             </label>
             <Input id="center-phone" type="tel" {...register('phone')} />
             {errors.phone && (
@@ -150,7 +152,7 @@ function CenterForm({
           </div>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="center-email" className="text-sm font-medium">
-              Email <span className="text-muted-foreground text-xs">(opcional)</span>
+              {t('common.email')} <span className="text-muted-foreground text-xs">{t('common.optional')}</span>
             </label>
             <Input id="center-email" type="email" {...register('email')} />
             {errors.email && (
@@ -171,17 +173,17 @@ function CenterForm({
             className="h-4 w-4 rounded border-input accent-primary cursor-pointer"
           />
           <label htmlFor="center-active" className="text-sm font-medium cursor-pointer">
-            Academia activa
+            {t('center_sheet.field.active_label')}
           </label>
         </div>
       </form>
 
       <SheetFooter className="px-6 pb-6 pt-0 flex-row justify-end gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
+          {t('sheet.cancel')}
         </Button>
         <Button type="submit" form="center-form" disabled={isSubmitting}>
-          {mode === 'create' ? 'Crear academia' : 'Guardar cambios'}
+          {mode === 'create' ? t('center_sheet.submit_create') : t('center_sheet.submit_edit')}
         </Button>
       </SheetFooter>
     </>
@@ -189,6 +191,8 @@ function CenterForm({
 }
 
 export function CenterSheet({ open, onOpenChange, mode, center, onSubmit }: Props) {
+  const { t } = useTranslation();
+
   function handleSubmit(data: CenterFormValues) {
     onSubmit(data);
     onOpenChange(false);
@@ -200,11 +204,11 @@ export function CenterSheet({ open, onOpenChange, mode, center, onSubmit }: Prop
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
         <SheetHeader className="px-6 pt-6 pb-0">
-          <SheetTitle>{mode === 'create' ? 'Nueva academia' : 'Editar academia'}</SheetTitle>
+          <SheetTitle>{mode === 'create' ? t('center_sheet.title_create') : t('center_sheet.title_edit')}</SheetTitle>
           <SheetDescription>
             {mode === 'create'
-              ? 'Crea una nueva sede de Platón.'
-              : 'Modifica los datos de la academia.'}
+              ? t('center_sheet.desc_create')
+              : t('center_sheet.desc_edit')}
           </SheetDescription>
         </SheetHeader>
 

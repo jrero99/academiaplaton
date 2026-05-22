@@ -27,32 +27,9 @@ import {
 } from '@/features/billing/components/InvoiceSheet';
 import { openInvoicePdf } from '@/features/billing/lib/invoice-pdf';
 import type { InvoiceDto, InvoiceStatus } from '@academiaplaton/shared';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 const ORG_ID = '00000000-0000-0000-0000-000000000001';
-
-const dateFmt = new Intl.DateTimeFormat('es-ES', {
-  day: '2-digit',
-  month: '2-digit',
-  year: 'numeric',
-});
-
-const eurFmt = new Intl.NumberFormat('es-ES', {
-  style: 'currency',
-  currency: 'EUR',
-});
-
-const MONTH_LABELS = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-];
-
-const STATUS_META: Record<InvoiceStatus, { label: string; className: string }> = {
-  pending:   { label: 'Pendiente', className: 'bg-muted text-muted-foreground' },
-  sent:      { label: 'Enviado',   className: 'bg-accent text-accent-foreground' },
-  paid:      { label: 'Pagado',    className: 'bg-emerald-100 text-emerald-800' },
-  overdue:   { label: 'Vencido',   className: 'bg-destructive/10 text-destructive' },
-  cancelled: { label: 'Anulado',   className: 'bg-zinc-200 text-zinc-700' },
-};
 
 type SheetState =
   | { open: false }
@@ -105,6 +82,33 @@ function formToInvoiceFields(data: InvoiceFormValues) {
 export function InvoicesListPage() {
   const currentUser = useCurrentUser();
   const scopedCenter = scopedCenterId(currentUser);
+  const { t, locale } = useTranslation();
+
+  const dateFmt = useMemo(
+    () => new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', year: 'numeric' }),
+    [locale],
+  );
+
+  const eurFmt = useMemo(
+    () => new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR' }),
+    [locale],
+  );
+
+  // Month labels from translations — reactive to locale
+  const MONTH_LABELS = useMemo(() => [
+    t('invoices.month.1'), t('invoices.month.2'), t('invoices.month.3'),
+    t('invoices.month.4'), t('invoices.month.5'), t('invoices.month.6'),
+    t('invoices.month.7'), t('invoices.month.8'), t('invoices.month.9'),
+    t('invoices.month.10'), t('invoices.month.11'), t('invoices.month.12'),
+  ], [t]);
+
+  const STATUS_META: Record<InvoiceStatus, { labelKey: string; className: string }> = useMemo(() => ({
+    pending:   { labelKey: 'invoices.status.pending',   className: 'bg-muted text-muted-foreground' },
+    sent:      { labelKey: 'invoices.status.sent',      className: 'bg-accent text-accent-foreground' },
+    paid:      { labelKey: 'invoices.status.paid',      className: 'bg-emerald-100 text-emerald-800' },
+    overdue:   { labelKey: 'invoices.status.overdue',   className: 'bg-destructive/10 text-destructive' },
+    cancelled: { labelKey: 'invoices.status.cancelled', className: 'bg-zinc-200 text-zinc-700' },
+  }), []);
 
   const [invoices, setInvoices] = useState<InvoiceDto[]>(MOCK_INVOICES);
   const [filters, setFilters] = useState(initialFilters);
@@ -250,7 +254,7 @@ export function InvoicesListPage() {
           organizationId: ORG_ID,
           studentId: s.id,
           number,
-          concept: `Cuota ${monthLabel} ${year}`,
+          concept: t('invoices.generated_concept', { month: monthLabel, year }),
           amount: s.monthlyFee!,
           periodMonth: month,
           periodYear: year,
@@ -262,7 +266,7 @@ export function InvoicesListPage() {
       });
 
       if (generated.length === 0) {
-        alert('No hay nuevos recibos que generar para este mes.');
+        alert(t('invoices.no_new_this_month'));
         return prev;
       }
       return [...generated, ...prev];
@@ -272,7 +276,7 @@ export function InvoicesListPage() {
   function handlePdf(invoice: InvoiceDto) {
     const student = studentById.get(invoice.studentId);
     if (!student) {
-      alert('Alumno no encontrado.');
+      alert(t('invoices.student_not_found_alert'));
       return;
     }
     const center = centerById.get(student.centerId);
@@ -280,111 +284,116 @@ export function InvoicesListPage() {
       invoice,
       student,
       centerName: center?.name,
+      t,
+      locale,
     });
   }
+
+  const invoiceUnit = (count: number) =>
+    count === 1 ? t('invoices.unit_singular') : t('invoices.unit_plural');
 
   return (
     <>
       <PageHeader
-        title="Recibos"
-        breadcrumbs={[{ label: 'Admin', to: '/admin' }, { label: 'Recibos' }]}
+        title={t('invoices.title')}
+        breadcrumbs={[{ label: t('breadcrumb.admin'), to: '/admin' }, { label: t('invoices.title') }]}
       />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
         <div className="flex flex-wrap gap-2">
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4" />
-            Nuevo recibo
+            {t('invoices.new')}
           </Button>
           <Button variant="outline" onClick={handleGenerateMonth}>
             <Sparkles className="h-4 w-4" />
-            Generar recibos del mes
+            {t('invoices.generate_month')}
           </Button>
         </div>
       </div>
 
       <FilterBar hasActive={hasActiveFilters} onClear={clearFilters}>
-        <FilterField label="Buscador">
+        <FilterField label={t('filterbar.search_label')}>
           <input
             type="text"
             className={filterInputClass}
             value={filters.search}
             onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
-            placeholder="Nº, concepto, alumno..."
-            aria-label="Buscador general"
+            placeholder={t('invoices.filter.placeholder_search')}
+            aria-label={t('common.search_general_aria')}
           />
         </FilterField>
 
-        <FilterField label="Nº recibo">
+        <FilterField label={t('invoices.col.number')}>
           <input
             type="text"
             className={filterInputClass}
             value={filters.number}
             onChange={(e) => setFilters((f) => ({ ...f, number: e.target.value }))}
-            aria-label="Filtrar por número de recibo"
+            aria-label={t('invoices.filter.number_aria')}
           />
         </FilterField>
 
-        <FilterField label="Alumno">
+        <FilterField label={t('invoices.col.student')}>
           <input
             type="text"
             className={filterInputClass}
             value={filters.student}
             onChange={(e) => setFilters((f) => ({ ...f, student: e.target.value }))}
-            aria-label="Filtrar por alumno"
+            aria-label={t('invoices.filter.student_aria')}
           />
         </FilterField>
 
-        <FilterField label="Concepto">
+        <FilterField label={t('invoices.col.concept')}>
           <input
             type="text"
             className={filterInputClass}
             value={filters.concept}
             onChange={(e) => setFilters((f) => ({ ...f, concept: e.target.value }))}
-            aria-label="Filtrar por concepto"
+            aria-label={t('invoices.filter.concept_aria')}
           />
         </FilterField>
 
-        <FilterField label="Estado">
+        <FilterField label={t('common.status')}>
           <select
             className={filterSelectClass}
             value={filters.status}
             onChange={(e) =>
               setFilters((f) => ({ ...f, status: e.target.value as InvoiceStatus | '' }))
             }
-            aria-label="Filtrar por estado"
+            aria-label={t('common.filter_by_status_aria')}
           >
-            <option value="">Todos</option>
-            {(Object.entries(STATUS_META) as [InvoiceStatus, { label: string }][]).map(
+            <option value="">{t('invoices.filter.status_all')}</option>
+            {(Object.entries(STATUS_META) as [InvoiceStatus, { labelKey: string }][]).map(
               ([value, meta]) => (
-                <option key={value} value={value}>{meta.label}</option>
+                <option key={value} value={value}>{t(meta.labelKey)}</option>
               ),
             )}
           </select>
         </FilterField>
 
-        <FilterField label="Mes">
+        <FilterField label={t('invoices.filter.month')}>
           <select
             className={filterSelectClass}
             value={filters.periodMonth}
             onChange={(e) => setFilters((f) => ({ ...f, periodMonth: e.target.value }))}
-            aria-label="Filtrar por mes"
+            aria-label={t('invoices.filter.month_aria')}
           >
-            <option value="">Todos</option>
+            <option value="">{t('invoices.filter.month_all')}</option>
             {MONTH_LABELS.map((label, i) => (
               <option key={i} value={i + 1}>{label}</option>
             ))}
           </select>
         </FilterField>
 
-        <FilterField label="Año">
+        <FilterField label={t('invoices.filter.year')}>
           <select
             className={filterSelectClass}
             value={filters.periodYear}
             onChange={(e) => setFilters((f) => ({ ...f, periodYear: e.target.value }))}
-            aria-label="Filtrar por año"
+            aria-label={t('invoices.filter.year_aria')}
           >
-            <option value="">Todos</option>
+            <option value="">{t('invoices.filter.year_all')}</option>
             {availableYears.map((y) => (
               <option key={y} value={y}>{y}</option>
             ))}
@@ -398,21 +407,21 @@ export function InvoicesListPage() {
             <TableHeader>
               <TableRow className="bg-muted hover:bg-muted">
                 <TableHead className="w-12 text-muted-foreground hidden sm:table-cell">#</TableHead>
-                <TableHead className="hidden sm:table-cell">Nº recibo</TableHead>
-                <TableHead>Alumno</TableHead>
-                <TableHead className="hidden md:table-cell">Concepto</TableHead>
-                <TableHead>Importe</TableHead>
-                <TableHead className="hidden md:table-cell">Vencimiento</TableHead>
-                <TableHead className="hidden md:table-cell">Cobro enviado</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="w-24 text-right">Acciones</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('invoices.col.number')}</TableHead>
+                <TableHead>{t('invoices.col.student')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('invoices.col.concept')}</TableHead>
+                <TableHead>{t('invoices.col.amount')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('invoices.col.due_date')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('invoices.col.sent_at')}</TableHead>
+                <TableHead>{t('common.status')}</TableHead>
+                <TableHead className="w-24 text-right">{t('common.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
-                    No hay recibos que coincidan con los filtros.
+                    {t('invoices.empty')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -420,7 +429,7 @@ export function InvoicesListPage() {
                   const student = studentById.get(inv.studentId);
                   const studentName = student
                     ? `${student.firstName} ${student.lastName}`
-                    : '— alumno no encontrado —';
+                    : t('invoices.student_missing');
                   const statusMeta = STATUS_META[inv.status];
                   return (
                     <TableRow key={inv.id} className="hover:bg-muted/30">
@@ -439,7 +448,7 @@ export function InvoicesListPage() {
                         <span
                           className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusMeta.className}`}
                         >
-                          {statusMeta.label}
+                          {t(statusMeta.labelKey)}
                         </span>
                       </TableCell>
                       <TableCell>
@@ -447,7 +456,7 @@ export function InvoicesListPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            aria-label={`Generar PDF del recibo ${inv.number}`}
+                            aria-label={t('invoices.action.pdf', { number: inv.number })}
                             onClick={() => handlePdf(inv)}
                           >
                             <FileText className="h-4 w-4" />
@@ -455,7 +464,7 @@ export function InvoicesListPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            aria-label={`Editar recibo ${inv.number}`}
+                            aria-label={t('invoices.action.edit', { number: inv.number })}
                             onClick={() => openEdit(inv)}
                           >
                             <Pencil className="h-4 w-4" />
@@ -463,7 +472,7 @@ export function InvoicesListPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            aria-label={`Borrar recibo ${inv.number}`}
+                            aria-label={t('invoices.action.delete', { number: inv.number })}
                             className="hover:text-destructive"
                             onClick={() => handleDelete(inv.id)}
                           >
@@ -481,7 +490,7 @@ export function InvoicesListPage() {
       </div>
 
       <div className="mt-3 text-sm text-muted-foreground">
-        Mostrando {filtered.length} recibo{filtered.length === 1 ? '' : 's'} · Total facturado:{' '}
+        {t('invoices.summary', { count: filtered.length, recibo: invoiceUnit(filtered.length) })}
         <span className="font-semibold text-foreground">{eurFmt.format(filteredTotal)}</span>
       </div>
 
@@ -490,7 +499,7 @@ export function InvoicesListPage() {
         onOpenChange={(open) => { if (!open) closeSheet(); }}
         mode={sheet.open ? sheet.mode : 'create'}
         invoice={sheet.open && sheet.mode === 'edit' ? sheet.invoice : undefined}
-        students={MOCK_STUDENTS}
+        students={accessibleStudents}
         onSubmit={handleSheetSubmit}
       />
     </>

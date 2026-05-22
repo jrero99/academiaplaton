@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import type { CenterDto, StudentDto } from '@academiaplaton/shared';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 // ------------------------------------------------------------------ schema
 const phoneOptionalRegex = /^[+\d\s\-().]{0,20}$/;
@@ -34,12 +35,6 @@ const guardianSchema = z.object({
 
 const PAYMENT_METHOD_OPTIONS = ['cash', 'sepa', 'bank_transfer'] as const;
 type PaymentMethodOption = (typeof PAYMENT_METHOD_OPTIONS)[number];
-
-const PAYMENT_METHOD_LABELS: Record<PaymentMethodOption, string> = {
-  cash: 'Metálico',
-  sepa: 'SEPA',
-  bank_transfer: 'Transferencia',
-};
 
 // Coalescencia defensiva: si el alumno editado trae 'other' (valor heredado no
 // ofrecido en el form), se normaliza a 'cash' para no dejar el select sin valor.
@@ -77,13 +72,6 @@ const studentSchema = z.object({
 
 export type StudentFormValues = z.infer<typeof studentSchema>;
 
-const RELATIONSHIP_LABELS: Record<'mother' | 'father' | 'tutor' | 'other', string> = {
-  mother: 'Madre',
-  father: 'Padre',
-  tutor: 'Tutor/a',
-  other: 'Otro',
-};
-
 // Native select/textarea estilizados para alinear con shadcn Input
 const selectClassName =
   'h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-sm dark:bg-input/30';
@@ -114,6 +102,21 @@ function StudentForm({
   onSubmit: (data: StudentFormValues) => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
+
+  const PAYMENT_METHOD_LABELS: Record<PaymentMethodOption, string> = {
+    cash: t('students.payment.cash'),
+    sepa: t('students.payment.sepa'),
+    bank_transfer: t('students.payment.bank_transfer'),
+  };
+
+  const RELATIONSHIP_LABELS: Record<'mother' | 'father' | 'tutor' | 'other', string> = {
+    mother: t('guardian.relationship.mother'),
+    father: t('guardian.relationship.father'),
+    tutor: t('guardian.relationship.tutor'),
+    other: t('guardian.relationship.other'),
+  };
+
   const {
     register,
     control,
@@ -185,7 +188,7 @@ function StudentForm({
         {/* Nombre */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="student-firstName" className="text-sm font-medium">
-            Nombre <span aria-hidden="true" className="text-destructive">*</span>
+            {t('common.name')} <span aria-hidden="true" className="text-destructive">*</span>
           </label>
           <Input
             id="student-firstName"
@@ -200,7 +203,7 @@ function StudentForm({
         {/* Apellidos */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="student-lastName" className="text-sm font-medium">
-            Apellidos <span aria-hidden="true" className="text-destructive">*</span>
+            {t('common.surname')} <span aria-hidden="true" className="text-destructive">*</span>
           </label>
           <Input
             id="student-lastName"
@@ -215,7 +218,7 @@ function StudentForm({
         {/* Fecha de nacimiento */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="student-birthDate" className="text-sm font-medium">
-            Fecha de nacimiento <span aria-hidden="true" className="text-destructive">*</span>
+            {t('student_sheet.field.birthdate')} <span aria-hidden="true" className="text-destructive">*</span>
           </label>
           <Input
             id="student-birthDate"
@@ -231,7 +234,7 @@ function StudentForm({
         {/* Academia (1:1 alumno ↔ academia) */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="student-center" className="text-sm font-medium">
-            Academia <span aria-hidden="true" className="text-destructive">*</span>
+            {t('student_sheet.field.center')} <span aria-hidden="true" className="text-destructive">*</span>
           </label>
           <select
             id="student-center"
@@ -239,13 +242,13 @@ function StudentForm({
             className={selectClassName}
             {...register('centerId')}
           >
-            <option value="">— Selecciona una academia —</option>
+            <option value="">{t('student_sheet.field.center_placeholder')}</option>
             {centers
               .filter((c) => c.active || (student && c.id === student.centerId))
               .map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
-                  {!c.active ? ' (inactiva)' : ''}
+                  {!c.active ? t('student_sheet.field.center_inactive_suffix') : ''}
                 </option>
               ))}
           </select>
@@ -257,7 +260,7 @@ function StudentForm({
         {/* Email */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="student-email" className="text-sm font-medium">
-            Email <span className="text-muted-foreground text-xs">(opcional)</span>
+            {t('common.email')} <span className="text-muted-foreground text-xs">{t('common.optional')}</span>
           </label>
           <Input
             id="student-email"
@@ -273,7 +276,7 @@ function StudentForm({
         {/* Teléfono */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="student-phone" className="text-sm font-medium">
-            Teléfono <span className="text-muted-foreground text-xs">(opcional)</span>
+            {t('common.phone')} <span className="text-muted-foreground text-xs">{t('common.optional')}</span>
           </label>
           <Input
             id="student-phone"
@@ -289,7 +292,7 @@ function StudentForm({
         {/* Dirección */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="student-address" className="text-sm font-medium">
-            Dirección <span className="text-muted-foreground text-xs">(opcional)</span>
+            {t('student_sheet.field.address')} <span className="text-muted-foreground text-xs">{t('common.optional')}</span>
           </label>
           <Input
             id="student-address"
@@ -304,7 +307,7 @@ function StudentForm({
         {/* Cuota mensual */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="student-monthlyFee" className="text-sm font-medium">
-            Cuota mensual <span className="text-muted-foreground text-xs">(€ / mes, opcional)</span>
+            {t('student_sheet.field.monthly_fee')} <span className="text-muted-foreground text-xs">{t('student_sheet.field.monthly_fee_hint')}</span>
           </label>
           <Input
             id="student-monthlyFee"
@@ -330,7 +333,7 @@ function StudentForm({
         {/* Método de pago */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="student-paymentMethod" className="text-sm font-medium">
-            Método de pago <span aria-hidden="true" className="text-destructive">*</span>
+            {t('student_sheet.field.payment_method')} <span aria-hidden="true" className="text-destructive">*</span>
           </label>
           <select
             id="student-paymentMethod"
@@ -352,7 +355,7 @@ function StudentForm({
         {/* Notas */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="student-notes" className="text-sm font-medium">
-            Notas <span className="text-muted-foreground text-xs">(opcional)</span>
+            {t('student_sheet.field.notes')} <span className="text-muted-foreground text-xs">{t('common.optional')}</span>
           </label>
           <textarea
             id="student-notes"
@@ -371,7 +374,7 @@ function StudentForm({
         {/* Tutores */}
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold">Tutores</p>
+            <p className="text-sm font-semibold">{t('guardian.title')}</p>
             <Button
               type="button"
               variant="outline"
@@ -380,13 +383,13 @@ function StudentForm({
               disabled={fields.length >= 4}
             >
               <Plus className="h-4 w-4" />
-              Añadir
+              {t('guardian.add')}
             </Button>
           </div>
 
           {fields.length === 0 && (
             <p className="text-xs text-muted-foreground">
-              Aún no se ha añadido ningún tutor. Puedes añadir hasta 4.
+              {t('guardian.empty')}
             </p>
           )}
 
@@ -399,13 +402,13 @@ function StudentForm({
               >
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-muted-foreground">
-                    Tutor {index + 1}
+                    {t('guardian.label', { n: index + 1 })}
                   </p>
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    aria-label={`Eliminar tutor ${index + 1}`}
+                    aria-label={t('guardian.remove_aria', { n: index + 1 })}
                     onClick={() => remove(index)}
                     className="hover:text-destructive"
                   >
@@ -415,7 +418,7 @@ function StudentForm({
 
                 <div className="grid grid-cols-2 gap-2">
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-medium">Nombre</label>
+                    <label className="text-xs font-medium">{t('common.name')}</label>
                     <Input
                       aria-invalid={!!guardianErrors?.firstName}
                       {...register(`guardians.${index}.firstName` as const)}
@@ -427,7 +430,7 @@ function StudentForm({
                     )}
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-medium">Apellidos</label>
+                    <label className="text-xs font-medium">{t('common.surname')}</label>
                     <Input
                       aria-invalid={!!guardianErrors?.lastName}
                       {...register(`guardians.${index}.lastName` as const)}
@@ -441,7 +444,7 @@ function StudentForm({
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium">Relación</label>
+                  <label className="text-xs font-medium">{t('guardian.relationship')}</label>
                   <select
                     className={selectClassName}
                     {...register(`guardians.${index}.relationship` as const)}
@@ -455,7 +458,7 @@ function StudentForm({
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium">Teléfono</label>
+                  <label className="text-xs font-medium">{t('common.phone')}</label>
                   <Input
                     type="tel"
                     aria-invalid={!!guardianErrors?.phone}
@@ -470,7 +473,7 @@ function StudentForm({
 
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium">
-                    Email <span className="text-muted-foreground">(opcional)</span>
+                    {t('common.email')} <span className="text-muted-foreground">{t('common.optional')}</span>
                   </label>
                   <Input
                     type="email"
@@ -491,10 +494,10 @@ function StudentForm({
 
       <SheetFooter className="px-6 pb-6 pt-0 flex-row justify-end gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
+          {t('sheet.cancel')}
         </Button>
         <Button type="submit" form="student-form" disabled={isSubmitting}>
-          {mode === 'create' ? 'Crear alumno' : 'Guardar cambios'}
+          {mode === 'create' ? t('student_sheet.submit_create') : t('student_sheet.submit_edit')}
         </Button>
       </SheetFooter>
     </>
@@ -503,6 +506,8 @@ function StudentForm({
 
 // ------------------------------------------------------------------ shell
 export function StudentSheet({ open, onOpenChange, mode, student, centers, onSubmit }: Props) {
+  const { t } = useTranslation();
+
   function handleSubmit(data: StudentFormValues) {
     onSubmit(data);
     onOpenChange(false);
@@ -516,11 +521,11 @@ export function StudentSheet({ open, onOpenChange, mode, student, centers, onSub
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
         <SheetHeader className="px-6 pt-6 pb-0">
-          <SheetTitle>{mode === 'create' ? 'Nuevo alumno' : 'Editar alumno'}</SheetTitle>
+          <SheetTitle>{mode === 'create' ? t('student_sheet.title_create') : t('student_sheet.title_edit')}</SheetTitle>
           <SheetDescription>
             {mode === 'create'
-              ? 'Rellena los datos del nuevo alumno.'
-              : 'Modifica los datos del alumno.'}
+              ? t('student_sheet.desc_create')
+              : t('student_sheet.desc_edit')}
           </SheetDescription>
         </SheetHeader>
 

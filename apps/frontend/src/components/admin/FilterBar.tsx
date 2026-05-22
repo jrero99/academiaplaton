@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 // Estilo de select nativo alineado con shadcn Input.
 export const filterSelectClass =
@@ -17,6 +18,7 @@ interface FilterBarProps {
 }
 
 export function FilterBar({ children, hasActive, onClear }: FilterBarProps) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-wrap items-end gap-3 rounded-md border bg-muted/30 px-3 py-2 mb-4">
       {children}
@@ -28,7 +30,7 @@ export function FilterBar({ children, hasActive, onClear }: FilterBarProps) {
           className="text-muted-foreground"
         >
           <X className="h-4 w-4" />
-          Limpiar filtros
+          {t('filterbar.clear')}
         </Button>
       )}
     </div>

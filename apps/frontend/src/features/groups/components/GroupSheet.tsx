@@ -18,6 +18,7 @@ import type { GroupDto } from '@academiaplaton/shared';
 import type { Teacher } from '@/features/teachers/types';
 import type { StudentDto } from '@academiaplaton/shared';
 import { GroupAttendanceHistoryPanel } from '@/features/attendance/components/GroupAttendanceHistoryPanel';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 const groupSchema = z.object({
   name: z.string().min(1, 'El nombre del grupo es obligatorio').max(120),
@@ -59,6 +60,7 @@ function GroupForm({
   onSubmit: (data: GroupFormSubmit) => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
   const initialActive = mode === 'edit' && group ? group.active : true;
   const [activeChecked, setActiveChecked] = useState(initialActive);
   const [selectedStudents, setSelectedStudents] = useState<Set<string>>(
@@ -124,7 +126,7 @@ function GroupForm({
         {/* Nombre */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="group-name" className="text-sm font-medium">
-            Nombre del grupo <span aria-hidden="true" className="text-destructive">*</span>
+            {t('group_sheet.field.name')} <span aria-hidden="true" className="text-destructive">*</span>
           </label>
           <Input id="group-name" aria-invalid={!!errors.name} {...register('name')} />
           {errors.name && (
@@ -135,7 +137,7 @@ function GroupForm({
         {/* Asignatura */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="group-subject" className="text-sm font-medium">
-            Asignatura <span className="text-muted-foreground text-xs">(opcional)</span>
+            {t('group_sheet.field.subject')} <span className="text-muted-foreground text-xs">{t('common.optional')}</span>
           </label>
           <Input id="group-subject" {...register('subject')} />
         </div>
@@ -143,12 +145,12 @@ function GroupForm({
         {/* Descripción */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="group-description" className="text-sm font-medium">
-            Descripción <span className="text-muted-foreground text-xs">(opcional)</span>
+            {t('group_sheet.field.description')} <span className="text-muted-foreground text-xs">{t('common.optional')}</span>
           </label>
           <textarea
             id="group-description"
             rows={2}
-            placeholder="Nivel, contenidos, frecuencia... (máx. 240 caracteres)"
+            placeholder={t('group_sheet.field.description_placeholder')}
             maxLength={240}
             className="rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             {...register('description')}
@@ -161,7 +163,7 @@ function GroupForm({
         {/* Profesor titular */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="group-teacher" className="text-sm font-medium">
-            Profesor titular <span aria-hidden="true" className="text-destructive">*</span>
+            {t('group_sheet.field.teacher')} <span aria-hidden="true" className="text-destructive">*</span>
           </label>
           <select
             id="group-teacher"
@@ -169,13 +171,13 @@ function GroupForm({
             className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             {...register('teacherId')}
           >
-            <option value="">— Selecciona un profesor —</option>
+            <option value="">{t('group_sheet.field.teacher_placeholder')}</option>
             {teachers
-              .filter((t) => t.active || (group && t.id === group.teacherId))
-              .map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.firstName} {t.lastName}
-                  {!t.active ? ' (inactivo)' : ''}
+              .filter((tch) => tch.active || (group && tch.id === group.teacherId))
+              .map((tch) => (
+                <option key={tch.id} value={tch.id}>
+                  {tch.firstName} {tch.lastName}
+                  {!tch.active ? t('group_sheet.field.teacher_inactive_suffix') : ''}
                 </option>
               ))}
           </select>
@@ -183,7 +185,7 @@ function GroupForm({
             <p role="alert" className="text-xs text-destructive">{errors.teacherId.message}</p>
           )}
           <p className="text-xs text-muted-foreground">
-            Las sustituciones puntuales se registrarán en el calendario (Fase 2), no aquí.
+            {t('group_sheet.field.teacher_substitution_hint')}
           </p>
         </div>
 
@@ -200,14 +202,14 @@ function GroupForm({
             className="h-4 w-4 rounded border-input accent-primary cursor-pointer"
           />
           <label htmlFor="group-active" className="text-sm font-medium cursor-pointer">
-            Grupo activo
+            {t('group_sheet.field.active_label')}
           </label>
         </div>
 
         {/* Notas */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="group-notes" className="text-sm font-medium">
-            Notas <span className="text-muted-foreground text-xs">(opcional)</span>
+            {t('group_sheet.field.notes')} <span className="text-muted-foreground text-xs">{t('common.optional')}</span>
           </label>
           <textarea
             id="group-notes"
@@ -222,20 +224,23 @@ function GroupForm({
         {/* Alumnos asignados */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold">Alumnos asignados</p>
+            <p className="text-sm font-semibold">{t('group_sheet.field.students_assigned')}</p>
             <span className="text-xs text-muted-foreground">
-              {selectedStudents.size} seleccionado{selectedStudents.size === 1 ? '' : 's'}
+              {t('group_sheet.field.students_selected', {
+                count: selectedStudents.size,
+                suffix: selectedStudents.size === 1 ? '' : 's',
+              })}
             </span>
           </div>
           <Input
             value={studentFilter}
             onChange={(e) => setStudentFilter(e.target.value)}
-            placeholder="Filtrar alumnos..."
+            placeholder={t('group_sheet.field.students_filter_placeholder')}
             className="bg-muted"
           />
           <div className="max-h-56 overflow-y-auto rounded-md border border-input divide-y">
             {visibleStudents.length === 0 ? (
-              <p className="text-xs text-muted-foreground p-3">No hay alumnos.</p>
+              <p className="text-xs text-muted-foreground p-3">{t('group_sheet.field.students_empty')}</p>
             ) : (
               visibleStudents.map((s) => {
                 const checked = selectedStudents.has(s.id);
@@ -263,10 +268,10 @@ function GroupForm({
 
       <SheetFooter className="px-6 pb-6 pt-0 flex-row justify-end gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
+          {t('sheet.cancel')}
         </Button>
         <Button type="submit" form="group-form" disabled={isSubmitting}>
-          {mode === 'create' ? 'Crear grupo' : 'Guardar cambios'}
+          {mode === 'create' ? t('group_sheet.submit_create') : t('group_sheet.submit_edit')}
         </Button>
       </SheetFooter>
     </>
@@ -282,6 +287,8 @@ export function GroupSheet({
   students,
   onSubmit,
 }: Props) {
+  const { t } = useTranslation();
+
   function handleSubmit(data: GroupFormSubmit) {
     onSubmit(data);
     onOpenChange(false);
@@ -294,19 +301,19 @@ export function GroupSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
         <SheetHeader className="px-6 pt-6 pb-0">
-          <SheetTitle>{mode === 'create' ? 'Nuevo grupo' : 'Editar grupo'}</SheetTitle>
+          <SheetTitle>{mode === 'create' ? t('group_sheet.title_create') : t('group_sheet.title_edit')}</SheetTitle>
           <SheetDescription>
             {mode === 'create'
-              ? 'Crea un grupo y asigna profesor titular y alumnos.'
-              : 'Modifica los datos del grupo y ajusta sus asignaciones.'}
+              ? t('group_sheet.desc_create_full')
+              : t('group_sheet.desc_edit')}
           </SheetDescription>
         </SheetHeader>
 
         {showAttendanceTab && group ? (
           <Tabs defaultValue="data" className="px-6 pt-4">
             <TabsList className="w-full">
-              <TabsTrigger value="data">Datos</TabsTrigger>
-              <TabsTrigger value="attendance">Asistencia</TabsTrigger>
+              <TabsTrigger value="data">{t('group_sheet.tab.data')}</TabsTrigger>
+              <TabsTrigger value="attendance">{t('group_sheet.tab.attendance')}</TabsTrigger>
             </TabsList>
             <TabsContent value="data" className="-mx-6">
               <GroupForm

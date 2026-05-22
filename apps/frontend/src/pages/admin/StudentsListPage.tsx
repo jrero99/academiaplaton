@@ -25,20 +25,7 @@ import {
   type StudentFormValues,
 } from '@/features/students/components/StudentSheet';
 import type { StudentDto } from '@academiaplaton/shared';
-
-// Cubre las 3 opciones del formulario + 'other' por si llega un valor heredado desde backend.
-const PAYMENT_METHOD_LABELS_TABLE: Record<string, string> = {
-  cash: 'Metálico',
-  sepa: 'SEPA',
-  bank_transfer: 'Transferencia',
-  other: 'Otro',
-};
-
-const dateFmt = new Intl.DateTimeFormat('es-ES', {
-  day: '2-digit',
-  month: '2-digit',
-  year: 'numeric',
-});
+import { useTranslation } from '@/contexts/LanguageContext';
 
 const ORG_ID = '00000000-0000-0000-0000-000000000001';
 
@@ -75,11 +62,6 @@ function formToStudentFields(data: StudentFormValues) {
   };
 }
 
-const eurFmt = new Intl.NumberFormat('es-ES', {
-  style: 'currency',
-  currency: 'EUR',
-});
-
 type FeeFilter = 'any' | 'none' | 'has';
 
 const initialFilters = {
@@ -100,6 +82,25 @@ function includesCi(haystack: string | null | undefined, needle: string): boolea
 export function StudentsListPage() {
   const currentUser = useCurrentUser();
   const scopedCenter = scopedCenterId(currentUser);
+  const { t, locale } = useTranslation();
+
+  const dateFmt = useMemo(
+    () => new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', year: 'numeric' }),
+    [locale],
+  );
+
+  const eurFmt = useMemo(
+    () => new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR' }),
+    [locale],
+  );
+
+  // Payment method labels depend on locale/translations
+  const PAYMENT_METHOD_LABELS_TABLE: Record<string, string> = useMemo(() => ({
+    cash: t('students.payment.cash'),
+    sepa: t('students.payment.sepa'),
+    bank_transfer: t('students.payment.bank_transfer'),
+    other: t('students.payment.other'),
+  }), [t]);
 
   const [students, setStudents] = useState<StudentDto[]>(MOCK_STUDENTS);
   const [filters, setFilters] = useState(initialFilters);
@@ -198,78 +199,78 @@ export function StudentsListPage() {
   return (
     <>
       <PageHeader
-        title="Alumnos"
-        breadcrumbs={[{ label: 'Admin', to: '/admin' }, { label: 'Alumnos' }]}
+        title={t('students.title')}
+        breadcrumbs={[{ label: t('breadcrumb.admin'), to: '/admin' }, { label: t('students.title') }]}
       />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
         <Button onClick={openCreate}>
           <Plus className="h-4 w-4" />
-          Nuevo alumno
+          {t('students.new')}
         </Button>
       </div>
 
       <FilterBar hasActive={hasActiveFilters} onClear={clearFilters}>
-        <FilterField label="Buscador">
+        <FilterField label={t('filterbar.search_label')}>
           <input
             type="text"
             className={filterInputClass}
             value={filters.search}
             onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
-            placeholder="Nombre, email, teléfono..."
-            aria-label="Buscador general"
+            placeholder={t('common.placeholder_search_name_email_phone')}
+            aria-label={t('common.search_general_aria')}
           />
         </FilterField>
 
-        <FilterField label="Nombre">
+        <FilterField label={t('common.name')}>
           <input
             type="text"
             className={filterInputClass}
             value={filters.firstName}
             onChange={(e) => setFilters((f) => ({ ...f, firstName: e.target.value }))}
-            aria-label="Filtrar por nombre"
+            aria-label={t('common.filter_by_name_aria')}
           />
         </FilterField>
 
-        <FilterField label="Apellidos">
+        <FilterField label={t('common.surname')}>
           <input
             type="text"
             className={filterInputClass}
             value={filters.lastName}
             onChange={(e) => setFilters((f) => ({ ...f, lastName: e.target.value }))}
-            aria-label="Filtrar por apellidos"
+            aria-label={t('common.filter_by_surname_aria')}
           />
         </FilterField>
 
-        <FilterField label="Email">
+        <FilterField label={t('common.email')}>
           <input
             type="text"
             className={filterInputClass}
             value={filters.email}
             onChange={(e) => setFilters((f) => ({ ...f, email: e.target.value }))}
-            aria-label="Filtrar por email"
+            aria-label={t('common.filter_by_email_aria')}
           />
         </FilterField>
 
-        <FilterField label="Teléfono">
+        <FilterField label={t('common.phone')}>
           <input
             type="text"
             className={filterInputClass}
             value={filters.phone}
             onChange={(e) => setFilters((f) => ({ ...f, phone: e.target.value }))}
-            aria-label="Filtrar por teléfono"
+            aria-label={t('common.filter_by_phone_aria')}
           />
         </FilterField>
 
         {accessibleCenters.length > 1 && (
-          <FilterField label="Academia">
+          <FilterField label={t('common.center')}>
             <select
               className={filterSelectClass}
               value={filters.centerId}
               onChange={(e) => setFilters((f) => ({ ...f, centerId: e.target.value }))}
-              aria-label="Filtrar por academia"
+              aria-label={t('common.center_filter_aria')}
             >
-              <option value="">Todas</option>
+              <option value="">{t('students.filter.center_all')}</option>
               {accessibleCenters.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -277,16 +278,16 @@ export function StudentsListPage() {
           </FilterField>
         )}
 
-        <FilterField label="Cuota">
+        <FilterField label={t('students.filter.fee')}>
           <select
             className={filterSelectClass}
             value={filters.fee}
             onChange={(e) => setFilters((f) => ({ ...f, fee: e.target.value as FeeFilter }))}
-            aria-label="Filtrar por cuota"
+            aria-label={t('students.filter.fee_aria')}
           >
-            <option value="any">Cualquiera</option>
-            <option value="has">Con cuota</option>
-            <option value="none">Sin cuota</option>
+            <option value="any">{t('students.filter.fee_any')}</option>
+            <option value="has">{t('students.filter.fee_has')}</option>
+            <option value="none">{t('students.filter.fee_none')}</option>
           </select>
         </FilterField>
       </FilterBar>
@@ -297,22 +298,22 @@ export function StudentsListPage() {
             <TableHeader>
               <TableRow className="bg-muted hover:bg-muted">
                 <TableHead className="w-12 text-muted-foreground hidden sm:table-cell">#</TableHead>
-                <TableHead>Nombre completo</TableHead>
-                <TableHead className="hidden md:table-cell">Academia</TableHead>
-                <TableHead className="hidden md:table-cell">Fecha nacimiento</TableHead>
-                <TableHead className="hidden sm:table-cell">Email</TableHead>
-                <TableHead className="hidden md:table-cell">Teléfono</TableHead>
-                <TableHead className="hidden sm:table-cell">Cuota</TableHead>
-                <TableHead className="hidden md:table-cell">Pago</TableHead>
-                <TableHead className="hidden md:table-cell">Tutores</TableHead>
-                <TableHead className="w-24 text-right">Acciones</TableHead>
+                <TableHead>{t('common.full_name')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('common.center')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('students.col.birthdate')}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('common.email')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('common.phone')}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('students.col.fee')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('students.col.payment')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('students.col.guardians')}</TableHead>
+                <TableHead className="w-24 text-right">{t('common.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
-                    No hay alumnos que coincidan con la búsqueda.
+                    {t('students.empty')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -339,13 +340,13 @@ export function StudentsListPage() {
                     <TableCell className="text-muted-foreground hidden md:table-cell">{s.guardians.length}</TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" aria-label="Abrir">
+                        <Button variant="ghost" size="icon" aria-label={t('common.open_record')}>
                           <ArrowUpRight className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          aria-label={`Editar a ${s.firstName} ${s.lastName}`}
+                          aria-label={t('students.action.edit_person', { name: `${s.firstName} ${s.lastName}` })}
                           onClick={() => openEdit(s)}
                         >
                           <Pencil className="h-4 w-4" />
@@ -353,7 +354,7 @@ export function StudentsListPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          aria-label={`Borrar a ${s.firstName} ${s.lastName}`}
+                          aria-label={t('students.action.delete_person', { name: `${s.firstName} ${s.lastName}` })}
                           className="hover:text-destructive"
                           onClick={() => handleDelete(s.id)}
                         >

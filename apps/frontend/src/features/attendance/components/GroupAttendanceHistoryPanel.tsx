@@ -7,20 +7,21 @@ import { Input } from '@/components/ui/input';
 import { MOCK_TEACHERS } from '@/features/teachers/data/mock-teachers';
 import { getGroupAttendanceHistory } from '../data/mock-attendance';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-function formatShortDate(isoDate: string): string {
+function formatShortDate(isoDate: string, locale: string): string {
   const [year, month, day] = isoDate.split('-').map(Number) as [number, number, number];
   const d = new Date(year, month - 1, day);
-  return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function teacherName(teacherId: string): string {
-  const t = MOCK_TEACHERS.find((t) => t.id === teacherId);
-  return t ? `${t.firstName} ${t.lastName}` : '—';
+  const tch = MOCK_TEACHERS.find((t) => t.id === teacherId);
+  return tch ? `${tch.firstName} ${tch.lastName}` : '—';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -28,6 +29,7 @@ function teacherName(teacherId: string): string {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function EntryDetail({ entry }: { entry: GroupAttendanceHistoryEntryDto }) {
+  const { t } = useTranslation();
   const present = entry.marks.filter((m) => m.status === 'present');
   const justifiedAbsent = entry.marks.filter((m) => m.status === 'absent' && m.justified);
   const unjustifiedAbsent = entry.marks.filter((m) => m.status === 'absent' && !m.justified);
@@ -37,10 +39,10 @@ function EntryDetail({ entry }: { entry: GroupAttendanceHistoryEntryDto }) {
       {/* Presentes */}
       <div>
         <p className="font-semibold text-xs uppercase tracking-wide text-muted-foreground mb-2">
-          Presentes ({present.length})
+          {t('attendance.history.presences_label', { count: present.length })}
         </p>
         {present.length === 0 ? (
-          <p className="text-xs text-muted-foreground italic">Ninguno</p>
+          <p className="text-xs text-muted-foreground italic">{t('attendance.history.none_m')}</p>
         ) : (
           <ul className="space-y-0.5">
             {present.map((m) => (
@@ -55,10 +57,10 @@ function EntryDetail({ entry }: { entry: GroupAttendanceHistoryEntryDto }) {
       {/* Ausentes justificadas */}
       <div>
         <p className="font-semibold text-xs uppercase tracking-wide text-muted-foreground mb-2">
-          Ausencias justificadas ({justifiedAbsent.length})
+          {t('attendance.history.justified_label', { count: justifiedAbsent.length })}
         </p>
         {justifiedAbsent.length === 0 ? (
-          <p className="text-xs text-muted-foreground italic">Ninguna</p>
+          <p className="text-xs text-muted-foreground italic">{t('attendance.history.none_f')}</p>
         ) : (
           <ul className="space-y-2">
             {justifiedAbsent.map((m) => (
@@ -80,10 +82,10 @@ function EntryDetail({ entry }: { entry: GroupAttendanceHistoryEntryDto }) {
       {/* Ausentes sin justificar */}
       <div>
         <p className="font-semibold text-xs uppercase tracking-wide text-muted-foreground mb-2">
-          Ausencias sin justificar ({unjustifiedAbsent.length})
+          {t('attendance.history.unjustified_label', { count: unjustifiedAbsent.length })}
         </p>
         {unjustifiedAbsent.length === 0 ? (
-          <p className="text-xs text-muted-foreground italic">Ninguna</p>
+          <p className="text-xs text-muted-foreground italic">{t('attendance.history.none_f')}</p>
         ) : (
           <ul className="space-y-0.5">
             {unjustifiedAbsent.map((m) => (
@@ -103,6 +105,7 @@ function EntryDetail({ entry }: { entry: GroupAttendanceHistoryEntryDto }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function HistoryRow({ entry }: { entry: GroupAttendanceHistoryEntryDto }) {
+  const { t, locale } = useTranslation();
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -115,7 +118,7 @@ function HistoryRow({ entry }: { entry: GroupAttendanceHistoryEntryDto }) {
       >
         {/* Fecha */}
         <td className="py-2.5 px-3 text-sm whitespace-nowrap">
-          {formatShortDate(entry.date)}
+          {formatShortDate(entry.date, locale)}
         </td>
 
         {/* Horario */}
@@ -162,7 +165,7 @@ function HistoryRow({ entry }: { entry: GroupAttendanceHistoryEntryDto }) {
           <Button
             size="icon"
             variant="ghost"
-            aria-label={expanded ? 'Cerrar detalle' : 'Ver detalle de asistencia'}
+            aria-label={expanded ? t('attendance.history.collapse_aria') : t('attendance.history.expand_aria')}
             aria-expanded={expanded}
             onClick={() => setExpanded((v) => !v)}
             className="h-7 w-7"
@@ -189,13 +192,13 @@ function HistoryRow({ entry }: { entry: GroupAttendanceHistoryEntryDto }) {
             <Button
               size="sm"
               variant="ghost"
-              aria-label={expanded ? 'Cerrar detalle' : 'Ver detalle de asistencia'}
+              aria-label={expanded ? t('attendance.history.collapse_aria') : t('attendance.history.expand_aria')}
               aria-expanded={expanded}
               onClick={() => setExpanded((v) => !v)}
               className="h-6 text-xs gap-1"
             >
               {expanded ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-              {expanded ? 'Cerrar' : 'Ver'}
+              {expanded ? t('attendance.history.collapse_btn') : t('attendance.history.expand_btn')}
             </Button>
           </div>
         </td>
@@ -213,6 +216,7 @@ interface Props {
 }
 
 export function GroupAttendanceHistoryPanel({ groupId }: Props) {
+  const { t } = useTranslation();
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [onlyWithAbsences, setOnlyWithAbsences] = useState(false);
@@ -233,7 +237,7 @@ export function GroupAttendanceHistoryPanel({ groupId }: Props) {
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1">
           <label htmlFor="att-from" className="text-xs font-medium text-muted-foreground">
-            Desde
+            {t('attendance.history.from')}
           </label>
           <Input
             id="att-from"
@@ -245,7 +249,7 @@ export function GroupAttendanceHistoryPanel({ groupId }: Props) {
         </div>
         <div className="flex flex-col gap-1">
           <label htmlFor="att-to" className="text-xs font-medium text-muted-foreground">
-            Hasta
+            {t('attendance.history.to')}
           </label>
           <Input
             id="att-to"
@@ -261,9 +265,9 @@ export function GroupAttendanceHistoryPanel({ groupId }: Props) {
             checked={onlyWithAbsences}
             onChange={(e) => setOnlyWithAbsences(e.target.checked)}
             className="h-4 w-4 rounded border-input accent-primary"
-            aria-label="Mostrar solo sesiones con ausencias"
+            aria-label={t('attendance.history.only_absences')}
           />
-          Solo con ausencias
+          {t('attendance.history.only_absences')}
         </label>
         {(fromDate || toDate || onlyWithAbsences) && (
           <Button
@@ -277,7 +281,7 @@ export function GroupAttendanceHistoryPanel({ groupId }: Props) {
             }}
             className="h-8 text-xs"
           >
-            Limpiar filtros
+            {t('attendance.history.clear')}
           </Button>
         )}
       </div>
@@ -286,8 +290,8 @@ export function GroupAttendanceHistoryPanel({ groupId }: Props) {
       {entries.length === 0 ? (
         <div className="rounded-md border border-dashed border-border py-10 text-center text-sm text-muted-foreground">
           {allEntries.length === 0
-            ? 'Todavía no hay sesiones registradas para este grupo. Pasa lista desde el Calendario.'
-            : 'Ninguna sesión coincide con los filtros aplicados.'}
+            ? t('attendance.history.no_sessions')
+            : t('attendance.history.no_match')}
         </div>
       ) : (
         <div className="overflow-x-auto rounded-md border border-border">
@@ -295,24 +299,24 @@ export function GroupAttendanceHistoryPanel({ groupId }: Props) {
             <thead className="bg-muted/50">
               <tr className="border-b border-border">
                 <th className="py-2 px-3 text-left font-medium text-xs text-muted-foreground">
-                  Fecha
+                  {t('attendance.history.col_date')}
                 </th>
                 <th className="py-2 px-3 text-left font-medium text-xs text-muted-foreground">
-                  Horario
+                  {t('attendance.history.col_schedule')}
                 </th>
                 <th className="py-2 px-3 text-left font-medium text-xs text-muted-foreground hidden sm:table-cell">
-                  Profesor
+                  {t('attendance.history.col_teacher')}
                 </th>
                 <th className="py-2 px-3 text-center font-medium text-xs text-muted-foreground">
-                  Pres.
+                  {t('attendance.history.col_present')}
                 </th>
                 <th className="py-2 px-3 text-center font-medium text-xs text-muted-foreground">
-                  Aus.
+                  {t('attendance.history.col_absent')}
                 </th>
                 <th className="py-2 px-3 text-center font-medium text-xs text-muted-foreground">
-                  Just.
+                  {t('attendance.history.col_justified')}
                 </th>
-                <th className="py-2 px-3 hidden sm:table-cell" aria-label="Acciones" />
+                <th className="py-2 px-3 hidden sm:table-cell" aria-label={t('common.actions')} />
               </tr>
             </thead>
             <tbody>
@@ -325,8 +329,11 @@ export function GroupAttendanceHistoryPanel({ groupId }: Props) {
       )}
 
       <p className="text-xs text-muted-foreground">
-        Mostrando {entries.length} sesión{entries.length !== 1 ? 'es' : ''}.
-        Para editar la asistencia de una sesión, ve al Calendario y haz clic sobre ella.
+        {t('attendance.history.showing', {
+          count: entries.length,
+          suffix: entries.length !== 1 ? 's' : '',
+        })}{' '}
+        {t('attendance.history.edit_hint')}
       </p>
     </div>
   );

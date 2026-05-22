@@ -21,6 +21,7 @@ import {
   type TeacherColorId,
 } from '@academiaplaton/shared';
 import type { Teacher } from '../types';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 // ------------------------------------------------------------------ schema
 const teacherSchema = z.object({
@@ -69,6 +70,7 @@ function TeacherForm({
   onSubmit: (data: FormValues) => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
   const [passwordState, setPasswordState] = useState<PasswordState>('idle');
   const [activeChecked, setActiveChecked] = useState(
     mode === 'edit' && teacher ? teacher.active : true,
@@ -111,10 +113,10 @@ function TeacherForm({
   const takenColors = useMemo(() => {
     if (!selectedCenterId) return new Set<TeacherColorId>();
     const taken = new Set<TeacherColorId>();
-    for (const t of existingTeachers) {
-      if (t.centerId !== selectedCenterId) continue;
-      if (mode === 'edit' && teacher && t.id === teacher.id) continue;
-      if (t.color) taken.add(t.color);
+    for (const tch of existingTeachers) {
+      if (tch.centerId !== selectedCenterId) continue;
+      if (mode === 'edit' && teacher && tch.id === teacher.id) continue;
+      if (tch.color) taken.add(tch.color);
     }
     return taken;
   }, [existingTeachers, selectedCenterId, mode, teacher]);
@@ -154,7 +156,7 @@ function TeacherForm({
         {/* Nombre */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="teacher-firstName" className="text-sm font-medium">
-            Nombre <span aria-hidden="true" className="text-destructive">*</span>
+            {t('common.name')} <span aria-hidden="true" className="text-destructive">*</span>
           </label>
           <Input
             id="teacher-firstName"
@@ -169,7 +171,7 @@ function TeacherForm({
         {/* Apellidos */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="teacher-lastName" className="text-sm font-medium">
-            Apellidos <span aria-hidden="true" className="text-destructive">*</span>
+            {t('common.surname')} <span aria-hidden="true" className="text-destructive">*</span>
           </label>
           <Input
             id="teacher-lastName"
@@ -184,7 +186,7 @@ function TeacherForm({
         {/* Academia (1:1 profesor ↔ academia) */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="teacher-center" className="text-sm font-medium">
-            Academia <span aria-hidden="true" className="text-destructive">*</span>
+            {t('teacher_sheet.field.center')} <span aria-hidden="true" className="text-destructive">*</span>
           </label>
           <select
             id="teacher-center"
@@ -192,13 +194,13 @@ function TeacherForm({
             className={selectClassName}
             {...register('centerId')}
           >
-            <option value="">— Selecciona una academia —</option>
+            <option value="">— {t('teacher_sheet.field.center')} —</option>
             {centers
               .filter((c) => c.active || (teacher && c.id === teacher.centerId))
               .map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
-                  {!c.active ? ' (inactiva)' : ''}
+                  {!c.active ? t('student_sheet.field.center_inactive_suffix') : ''}
                 </option>
               ))}
           </select>
@@ -211,8 +213,8 @@ function TeacherForm({
         <div className="flex flex-col gap-2">
           <div className="flex items-baseline justify-between gap-2">
             <label className="text-sm font-medium">
-              Color en el calendario{' '}
-              <span className="text-muted-foreground text-xs">(opcional)</span>
+              {t('teacher_sheet.field.color_calendar')}{' '}
+              <span className="text-muted-foreground text-xs">{t('common.optional')}</span>
             </label>
             {selectedColor && (
               <button
@@ -222,18 +224,18 @@ function TeacherForm({
                 }
                 className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
               >
-                Quitar
+                {t('teacher_sheet.field.color_remove')}
               </button>
             )}
           </div>
           {!selectedCenterId && (
             <p className="text-xs text-muted-foreground">
-              Selecciona primero una academia para elegir color.
+              {t('teacher_sheet.field.color_hint_no_center')}
             </p>
           )}
           <div
             role="radiogroup"
-            aria-label="Color del profesor"
+            aria-label={t('teacher_sheet.field.color_aria')}
             className="grid grid-cols-4 gap-2 sm:grid-cols-8"
           >
             {TEACHER_COLOR_IDS.map((id) => {
@@ -248,7 +250,9 @@ function TeacherForm({
                   role="radio"
                   aria-checked={isSelected}
                   aria-label={
-                    isTaken ? `${palette.label} (ya en uso en esta academia)` : palette.label
+                    isTaken
+                      ? t('teacher_sheet.field.color_taken_aria', { label: palette.label })
+                      : palette.label
                   }
                   disabled={disabled}
                   onClick={() => handleColorPick(id)}
@@ -262,7 +266,7 @@ function TeacherForm({
                   style={{ backgroundColor: palette.swatch }}
                   title={
                     isTaken
-                      ? `${palette.label} — ya en uso en esta academia`
+                      ? t('teacher_sheet.field.color_taken_title', { label: palette.label })
                       : palette.label
                   }
                 >
@@ -275,7 +279,7 @@ function TeacherForm({
           </div>
           {selectedCenterId && takenColors.size >= TEACHER_COLOR_IDS.length && !selectedColor && (
             <p className="text-xs text-destructive">
-              No quedan colores libres en esta academia.
+              {t('teacher_sheet.field.color_no_free')}
             </p>
           )}
         </div>
@@ -283,7 +287,7 @@ function TeacherForm({
         {/* Email */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="teacher-email" className="text-sm font-medium">
-            Email <span aria-hidden="true" className="text-destructive">*</span>
+            {t('common.email')} <span aria-hidden="true" className="text-destructive">*</span>
           </label>
           <Input
             id="teacher-email"
@@ -299,8 +303,8 @@ function TeacherForm({
         {/* Teléfono */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="teacher-phone" className="text-sm font-medium">
-            Teléfono{' '}
-            <span className="text-muted-foreground text-xs">(opcional)</span>
+            {t('common.phone')}{' '}
+            <span className="text-muted-foreground text-xs">{t('common.optional')}</span>
           </label>
           <Input
             id="teacher-phone"
@@ -326,7 +330,7 @@ function TeacherForm({
             className="h-4 w-4 rounded border-input accent-primary cursor-pointer"
           />
           <label htmlFor="teacher-active" className="text-sm font-medium cursor-pointer">
-            Profesor activo
+            {t('teacher_sheet.field.active_label')}
           </label>
         </div>
 
@@ -335,23 +339,24 @@ function TeacherForm({
           <>
             <Separator />
             <div className="flex flex-col gap-3">
-              <p className="text-sm font-semibold">Acceso a la plataforma</p>
+              <p className="text-sm font-semibold">{t('teacher_sheet.access.title')}</p>
               <p className="text-xs text-muted-foreground">
-                Genera una contraseña temporal y envíasela al email del profesor.
+                {t('teacher_sheet.access.hint')}
               </p>
 
               {passwordState === 'idle' && (
                 <Button type="button" variant="outline" onClick={handleRegenerate}>
-                  Regenerar contraseña y enviar al email
+                  {t('teacher_sheet.access.regenerate_btn')}
                 </Button>
               )}
 
               {passwordState === 'confirming' && (
                 <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 flex flex-col gap-2">
-                  <p className="text-sm text-destructive font-medium">¿Confirmas el envío?</p>
+                  <p className="text-sm text-destructive font-medium">{t('teacher_sheet.access.confirm_question')}</p>
                   <p className="text-xs text-muted-foreground">
-                    Se enviará un email a <strong>{emailForFeedback}</strong> con una contraseña
-                    temporal. La contraseña actual quedará invalidada.
+                    {t('teacher_sheet.access.confirm_detail_prefix')}{' '}
+                    <strong>{emailForFeedback}</strong>{' '}
+                    {t('teacher_sheet.access.confirm_detail_suffix')}
                   </p>
                   <div className="flex gap-2 mt-1">
                     <Button
@@ -360,7 +365,7 @@ function TeacherForm({
                       size="sm"
                       onClick={handleRegenerate}
                     >
-                      Sí, enviar
+                      {t('teacher_sheet.access.confirm_yes')}
                     </Button>
                     <Button
                       type="button"
@@ -368,22 +373,23 @@ function TeacherForm({
                       size="sm"
                       onClick={() => setPasswordState('idle')}
                     >
-                      Cancelar
+                      {t('sheet.cancel')}
                     </Button>
                   </div>
                 </div>
               )}
 
               {passwordState === 'loading' && (
-                <p className="text-sm text-muted-foreground">Enviando correo...</p>
+                <p className="text-sm text-muted-foreground">{t('teacher_sheet.access.sending')}</p>
               )}
 
               {passwordState === 'success' && (
                 <div className="rounded-md border border-border bg-muted/50 p-3">
-                  <p className="text-sm font-medium">Correo enviado</p>
+                  <p className="text-sm font-medium">{t('teacher_sheet.access.sent_title')}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Hemos enviado un correo a <strong>{emailForFeedback}</strong> con una contraseña
-                    temporal.
+                    {t('teacher_sheet.access.sent_detail_prefix')}{' '}
+                    <strong>{emailForFeedback}</strong>{' '}
+                    {t('teacher_sheet.access.sent_detail_suffix')}
                   </p>
                 </div>
               )}
@@ -394,10 +400,10 @@ function TeacherForm({
 
       <SheetFooter className="px-6 pb-6 pt-0 flex-row justify-end gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
+          {t('sheet.cancel')}
         </Button>
         <Button type="submit" form="teacher-form" disabled={isSubmitting}>
-          {mode === 'create' ? 'Crear profesor' : 'Guardar cambios'}
+          {mode === 'create' ? t('teacher_sheet.submit_create') : t('teacher_sheet.submit_edit')}
         </Button>
       </SheetFooter>
     </>
@@ -414,6 +420,8 @@ export function TeacherSheet({
   existingTeachers,
   onSubmit,
 }: Props) {
+  const { t } = useTranslation();
+
   function handleSubmit(data: FormValues) {
     onSubmit(data);
     onOpenChange(false);
@@ -425,11 +433,11 @@ export function TeacherSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
         <SheetHeader className="px-6 pt-6 pb-0">
-          <SheetTitle>{mode === 'create' ? 'Nuevo profesor' : 'Editar profesor'}</SheetTitle>
+          <SheetTitle>{mode === 'create' ? t('teacher_sheet.title_create') : t('teacher_sheet.title_edit')}</SheetTitle>
           <SheetDescription>
             {mode === 'create'
-              ? 'Rellena los datos del nuevo profesor.'
-              : 'Modifica los datos del profesor.'}
+              ? t('teacher_sheet.desc_create')
+              : t('teacher_sheet.desc_edit')}
           </SheetDescription>
         </SheetHeader>
 
