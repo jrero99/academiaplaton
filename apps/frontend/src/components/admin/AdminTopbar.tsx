@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, Mail, ChevronDown, LogOut, Menu } from 'lucide-react';
+import { Bell, Mail, ChevronDown, LogOut, Menu, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -117,12 +118,26 @@ export function AdminTopbar() {
         </div>
       </header>
 
-      {/* Drawer de navegación móvil */}
+      {/* Drawer de navegación móvil. `showCloseButton={false}` desactiva la X
+          por defecto de shadcn — su `opacity-70 text-foreground` heredaba el
+          color del SheetContent (text-zinc-300) y quedaba casi invisible sobre
+          el SheetHeader blanco. Renderizamos una X propia oscura y bien
+          contrastada dentro del header. */}
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <SheetContent side="left" className="w-72 p-0 bg-zinc-950 text-zinc-300 border-r border-zinc-900 flex flex-col">
-          <SheetHeader className="h-16 flex-row items-center px-6 bg-white shrink-0 space-y-0">
+        <SheetContent
+          side="left"
+          showCloseButton={false}
+          className="w-72 p-0 bg-zinc-950 text-zinc-300 border-r border-zinc-900 flex flex-col"
+        >
+          <SheetHeader className="h-16 flex-row items-center justify-between px-6 bg-white shrink-0 space-y-0">
             <SheetTitle className="sr-only">{t('topbar.nav_menu_title')}</SheetTitle>
             <img src={platoLogo} alt={t('app.name')} className="h-10 w-auto" />
+            <SheetClose
+              aria-label={t('topbar.close_menu')}
+              className="inline-flex items-center justify-center rounded-md p-2 text-zinc-900 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </SheetClose>
           </SheetHeader>
 
           <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-6">

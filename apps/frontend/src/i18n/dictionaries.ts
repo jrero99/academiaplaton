@@ -99,6 +99,7 @@ const ca: Dict = {
 
   // ---------------------------------------------------------------- topbar
   'topbar.open_menu': 'Obrir menú',
+  'topbar.close_menu': 'Tancar menú',
   'topbar.notifications': 'Notificacions',
   'topbar.messages': 'Missatges',
   'topbar.profile': 'El meu perfil',
@@ -666,6 +667,7 @@ const es: Dict = {
 
   // ---------------------------------------------------------------- topbar
   'topbar.open_menu': 'Abrir menú',
+  'topbar.close_menu': 'Cerrar menú',
   'topbar.notifications': 'Notificaciones',
   'topbar.messages': 'Mensajes',
   'topbar.profile': 'Mi perfil',
