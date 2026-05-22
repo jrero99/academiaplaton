@@ -213,66 +213,68 @@ export function CentersListPage() {
       </FilterBar>
 
       <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted hover:bg-muted">
-              <TableHead className="w-16 text-muted-foreground">#</TableHead>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Identificador URL</TableHead>
-              <TableHead>Dirección</TableHead>
-              <TableHead>Teléfono</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="w-32 text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                  No hay academias que coincidan con la búsqueda.
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted hover:bg-muted">
+                <TableHead className="w-16 text-muted-foreground hidden sm:table-cell">#</TableHead>
+                <TableHead>Nombre</TableHead>
+                <TableHead className="hidden sm:table-cell">Identificador URL</TableHead>
+                <TableHead className="hidden md:table-cell">Dirección</TableHead>
+                <TableHead className="hidden md:table-cell">Teléfono</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead className="w-24 text-right">Acciones</TableHead>
               </TableRow>
-            ) : (
-              filtered.map((c, idx) => (
-                <TableRow key={c.id} className="hover:bg-muted/30">
-                  <TableCell className="font-medium text-muted-foreground">#{idx + 1}</TableCell>
-                  <TableCell className="font-medium">{c.name}</TableCell>
-                  <TableCell className="text-muted-foreground font-mono text-xs">
-                    {c.slug}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{c.address ?? '—'}</TableCell>
-                  <TableCell className="text-muted-foreground">{c.phone ?? '—'}</TableCell>
-                  <TableCell>
-                    <Badge variant={c.active ? 'default' : 'secondary'}>
-                      {c.active ? 'Activa' : 'Inactiva'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Editar ${c.name}`}
-                        onClick={() => openEdit(c)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Borrar ${c.name}`}
-                        className="hover:text-destructive"
-                        onClick={() => handleDelete(c.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+            </TableHeader>
+            <TableBody>
+              {filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    No hay academias que coincidan con la búsqueda.
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                filtered.map((c, idx) => (
+                  <TableRow key={c.id} className="hover:bg-muted/30">
+                    <TableCell className="font-medium text-muted-foreground hidden sm:table-cell">#{idx + 1}</TableCell>
+                    <TableCell className="font-medium">{c.name}</TableCell>
+                    <TableCell className="text-muted-foreground font-mono text-xs hidden sm:table-cell">
+                      {c.slug}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground hidden md:table-cell">{c.address ?? '—'}</TableCell>
+                    <TableCell className="text-muted-foreground hidden md:table-cell">{c.phone ?? '—'}</TableCell>
+                    <TableCell>
+                      <Badge variant={c.active ? 'default' : 'secondary'}>
+                        {c.active ? 'Activa' : 'Inactiva'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Editar ${c.name}`}
+                          onClick={() => openEdit(c)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Borrar ${c.name}`}
+                          className="hover:text-destructive"
+                          onClick={() => handleDelete(c.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       <CenterSheet

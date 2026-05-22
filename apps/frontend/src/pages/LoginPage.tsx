@@ -77,7 +77,7 @@ export function LoginPage() {
   }
 
   return (
-    <main className="min-h-svh flex items-center justify-center bg-muted/40 p-6">
+    <main className="min-h-svh flex items-center justify-center bg-muted/40 px-4 py-8 sm:p-6">
       <div className="w-full max-w-4xl grid gap-6 lg:grid-cols-[minmax(0,360px)_1fr]">
         {/* Form */}
         <div className="rounded-lg border bg-card shadow-sm overflow-hidden self-start">
@@ -135,7 +135,7 @@ export function LoginPage() {
               </div>
             )}
 
-            <Button type="submit" disabled={isSubmitting} className="mt-2">
+            <Button type="submit" disabled={isSubmitting} className="mt-2 h-11 sm:h-9">
               Entrar
             </Button>
           </form>

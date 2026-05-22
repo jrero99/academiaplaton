@@ -393,89 +393,91 @@ export function InvoicesListPage() {
       </FilterBar>
 
       <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted hover:bg-muted">
-              <TableHead className="w-12 text-muted-foreground">#</TableHead>
-              <TableHead>Nº recibo</TableHead>
-              <TableHead>Alumno</TableHead>
-              <TableHead>Concepto</TableHead>
-              <TableHead>Importe</TableHead>
-              <TableHead>Vencimiento</TableHead>
-              <TableHead>Cobro enviado</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="w-32 text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
-                  No hay recibos que coincidan con los filtros.
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted hover:bg-muted">
+                <TableHead className="w-12 text-muted-foreground hidden sm:table-cell">#</TableHead>
+                <TableHead className="hidden sm:table-cell">Nº recibo</TableHead>
+                <TableHead>Alumno</TableHead>
+                <TableHead className="hidden md:table-cell">Concepto</TableHead>
+                <TableHead>Importe</TableHead>
+                <TableHead className="hidden md:table-cell">Vencimiento</TableHead>
+                <TableHead className="hidden md:table-cell">Cobro enviado</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead className="w-24 text-right">Acciones</TableHead>
               </TableRow>
-            ) : (
-              filtered.map((inv, idx) => {
-                const student = studentById.get(inv.studentId);
-                const studentName = student
-                  ? `${student.firstName} ${student.lastName}`
-                  : '— alumno no encontrado —';
-                const statusMeta = STATUS_META[inv.status];
-                return (
-                  <TableRow key={inv.id} className="hover:bg-muted/30">
-                    <TableCell className="font-medium text-muted-foreground">{idx + 1}</TableCell>
-                    <TableCell className="font-medium">{inv.number}</TableCell>
-                    <TableCell>{studentName}</TableCell>
-                    <TableCell className="text-muted-foreground">{inv.concept}</TableCell>
-                    <TableCell className="font-medium">{eurFmt.format(Number(inv.amount))}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {dateFmt.format(new Date(inv.dueDate))}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {inv.issuedAt ? dateFmt.format(new Date(inv.issuedAt)) : '—'}
-                    </TableCell>
-                    <TableCell>
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusMeta.className}`}
-                      >
-                        {statusMeta.label}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Generar PDF del recibo ${inv.number}`}
-                          onClick={() => handlePdf(inv)}
+            </TableHeader>
+            <TableBody>
+              {filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                    No hay recibos que coincidan con los filtros.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filtered.map((inv, idx) => {
+                  const student = studentById.get(inv.studentId);
+                  const studentName = student
+                    ? `${student.firstName} ${student.lastName}`
+                    : '— alumno no encontrado —';
+                  const statusMeta = STATUS_META[inv.status];
+                  return (
+                    <TableRow key={inv.id} className="hover:bg-muted/30">
+                      <TableCell className="font-medium text-muted-foreground hidden sm:table-cell">{idx + 1}</TableCell>
+                      <TableCell className="font-medium hidden sm:table-cell">{inv.number}</TableCell>
+                      <TableCell>{studentName}</TableCell>
+                      <TableCell className="text-muted-foreground hidden md:table-cell">{inv.concept}</TableCell>
+                      <TableCell className="font-medium">{eurFmt.format(Number(inv.amount))}</TableCell>
+                      <TableCell className="text-muted-foreground hidden md:table-cell">
+                        {dateFmt.format(new Date(inv.dueDate))}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground hidden md:table-cell">
+                        {inv.issuedAt ? dateFmt.format(new Date(inv.issuedAt)) : '—'}
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusMeta.className}`}
                         >
-                          <FileText className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Editar recibo ${inv.number}`}
-                          onClick={() => openEdit(inv)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Borrar recibo ${inv.number}`}
-                          className="hover:text-destructive"
-                          onClick={() => handleDelete(inv.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
+                          {statusMeta.label}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Generar PDF del recibo ${inv.number}`}
+                            onClick={() => handlePdf(inv)}
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Editar recibo ${inv.number}`}
+                            onClick={() => openEdit(inv)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Borrar recibo ${inv.number}`}
+                            className="hover:text-destructive"
+                            onClick={() => handleDelete(inv.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       <div className="mt-3 text-sm text-muted-foreground">

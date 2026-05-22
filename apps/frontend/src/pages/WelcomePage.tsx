@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 
 export function WelcomePage() {
   return (
-    <main className="min-h-svh flex flex-col items-center justify-center gap-10 p-8 bg-background text-foreground">
+    <main className="min-h-svh flex flex-col items-center justify-center gap-10 px-4 py-8 sm:p-8 bg-background text-foreground">
       <header className="flex flex-col items-center gap-6 text-center">
         <img
           src={platoLogo}

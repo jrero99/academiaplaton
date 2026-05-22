@@ -189,56 +189,58 @@ export function LeadsListPage() {
       </FilterBar>
 
       <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted hover:bg-muted">
-              <TableHead className="w-12 text-muted-foreground">#</TableHead>
-              <TableHead>Nombre completo</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Curso de interés</TableHead>
-              <TableHead>Fecha de alta</TableHead>
-              <TableHead className="w-32 text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                  No hay leads que coincidan con la búsqueda.
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted hover:bg-muted">
+                <TableHead className="w-12 text-muted-foreground hidden sm:table-cell">#</TableHead>
+                <TableHead>Nombre completo</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead className="hidden sm:table-cell">Email</TableHead>
+                <TableHead className="hidden md:table-cell">Curso de interés</TableHead>
+                <TableHead className="hidden md:table-cell">Fecha de alta</TableHead>
+                <TableHead className="w-24 text-right">Acciones</TableHead>
               </TableRow>
-            ) : (
-              filtered.map((lead, idx) => (
-                <TableRow key={lead.id} className="hover:bg-muted/30">
-                  <TableCell className="font-medium text-muted-foreground">{idx + 1}</TableCell>
-                  <TableCell className="font-medium">
-                    {lead.firstName} {lead.lastName}
-                  </TableCell>
-                  <TableCell>
-                    <LeadStatusBadge status={lead.status} />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {lead.email ?? '—'}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {lead.interestedCourse ?? '—'}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {dateFmt.format(new Date(lead.createdAt))}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1">
-                      <RowAction icon={ArrowUpRight} label="Abrir" />
-                      <RowAction icon={Pencil} label="Editar" />
-                      <RowAction icon={Trash2} label="Borrar" destructive />
-                    </div>
+            </TableHeader>
+            <TableBody>
+              {filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    No hay leads que coincidan con la búsqueda.
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                filtered.map((lead, idx) => (
+                  <TableRow key={lead.id} className="hover:bg-muted/30">
+                    <TableCell className="font-medium text-muted-foreground hidden sm:table-cell">{idx + 1}</TableCell>
+                    <TableCell className="font-medium">
+                      {lead.firstName} {lead.lastName}
+                    </TableCell>
+                    <TableCell>
+                      <LeadStatusBadge status={lead.status} />
+                    </TableCell>
+                    <TableCell className="text-muted-foreground hidden sm:table-cell">
+                      {lead.email ?? '—'}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground hidden md:table-cell">
+                      {lead.interestedCourse ?? '—'}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground hidden md:table-cell">
+                      {dateFmt.format(new Date(lead.createdAt))}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        <RowAction icon={ArrowUpRight} label="Abrir" />
+                        <RowAction icon={Pencil} label="Editar" />
+                        <RowAction icon={Trash2} label="Borrar" destructive />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </>
   );

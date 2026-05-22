@@ -284,75 +284,77 @@ export function StudentsListPage() {
       </FilterBar>
 
       <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted hover:bg-muted">
-              <TableHead className="w-12 text-muted-foreground">#</TableHead>
-              <TableHead>Nombre completo</TableHead>
-              <TableHead>Academia</TableHead>
-              <TableHead>Fecha nacimiento</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Teléfono</TableHead>
-              <TableHead>Cuota</TableHead>
-              <TableHead>Tutores</TableHead>
-              <TableHead className="w-32 text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
-                  No hay alumnos que coincidan con la búsqueda.
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted hover:bg-muted">
+                <TableHead className="w-12 text-muted-foreground hidden sm:table-cell">#</TableHead>
+                <TableHead>Nombre completo</TableHead>
+                <TableHead className="hidden md:table-cell">Academia</TableHead>
+                <TableHead className="hidden md:table-cell">Fecha nacimiento</TableHead>
+                <TableHead className="hidden sm:table-cell">Email</TableHead>
+                <TableHead className="hidden md:table-cell">Teléfono</TableHead>
+                <TableHead className="hidden sm:table-cell">Cuota</TableHead>
+                <TableHead className="hidden md:table-cell">Tutores</TableHead>
+                <TableHead className="w-24 text-right">Acciones</TableHead>
               </TableRow>
-            ) : (
-              filtered.map((s, idx) => (
-                <TableRow key={s.id} className="hover:bg-muted/30">
-                  <TableCell className="font-medium text-muted-foreground">{idx + 1}</TableCell>
-                  <TableCell className="font-medium">
-                    {s.firstName} {s.lastName}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {centerById.get(s.centerId)?.name ?? '—'}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {dateFmt.format(new Date(s.birthDate))}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{s.email ?? '—'}</TableCell>
-                  <TableCell className="text-muted-foreground">{s.phone ?? '—'}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {s.monthlyFee != null ? eurFmt.format(s.monthlyFee) : '—'}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{s.guardians.length}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon" aria-label="Abrir">
-                        <ArrowUpRight className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Editar a ${s.firstName} ${s.lastName}`}
-                        onClick={() => openEdit(s)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Borrar a ${s.firstName} ${s.lastName}`}
-                        className="hover:text-destructive"
-                        onClick={() => handleDelete(s.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+            </TableHeader>
+            <TableBody>
+              {filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                    No hay alumnos que coincidan con la búsqueda.
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                filtered.map((s, idx) => (
+                  <TableRow key={s.id} className="hover:bg-muted/30">
+                    <TableCell className="font-medium text-muted-foreground hidden sm:table-cell">{idx + 1}</TableCell>
+                    <TableCell className="font-medium">
+                      {s.firstName} {s.lastName}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground hidden md:table-cell">
+                      {centerById.get(s.centerId)?.name ?? '—'}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground hidden md:table-cell">
+                      {dateFmt.format(new Date(s.birthDate))}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground hidden sm:table-cell">{s.email ?? '—'}</TableCell>
+                    <TableCell className="text-muted-foreground hidden md:table-cell">{s.phone ?? '—'}</TableCell>
+                    <TableCell className="text-muted-foreground hidden sm:table-cell">
+                      {s.monthlyFee != null ? eurFmt.format(s.monthlyFee) : '—'}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground hidden md:table-cell">{s.guardians.length}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" aria-label="Abrir">
+                          <ArrowUpRight className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Editar a ${s.firstName} ${s.lastName}`}
+                          onClick={() => openEdit(s)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Borrar a ${s.firstName} ${s.lastName}`}
+                          className="hover:text-destructive"
+                          onClick={() => handleDelete(s.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       <StudentSheet

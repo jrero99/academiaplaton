@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 
 // Estilo de select nativo alineado con shadcn Input.
 export const filterSelectClass =
-  'h-9 min-w-[10rem] rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring';
+  'h-9 w-full min-w-[8rem] rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring';
 
 // Mismo estilo para inputs de filtro de texto.
 export const filterInputClass =
-  'h-9 min-w-[10rem] rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring';
+  'h-9 w-full min-w-[8rem] rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring';
 
 interface FilterBarProps {
   children: ReactNode;
@@ -42,7 +42,7 @@ interface FilterFieldProps {
 
 export function FilterField({ label, children }: FilterFieldProps) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1 min-w-[8rem] flex-1 sm:flex-none sm:w-auto">
       <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
         {label}
       </span>

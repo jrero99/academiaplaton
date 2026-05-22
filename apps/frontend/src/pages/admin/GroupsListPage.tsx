@@ -295,78 +295,80 @@ export function GroupsListPage() {
       </FilterBar>
 
       <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted hover:bg-muted">
-              <TableHead className="w-12 text-muted-foreground">#</TableHead>
-              <TableHead>Grupo</TableHead>
-              <TableHead>Asignatura</TableHead>
-              <TableHead>Descripción</TableHead>
-              <TableHead>Profesor titular</TableHead>
-              <TableHead>Alumnos</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="w-32 text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                  No hay grupos que coincidan con la búsqueda.
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted hover:bg-muted">
+                <TableHead className="w-12 text-muted-foreground hidden sm:table-cell">#</TableHead>
+                <TableHead>Grupo</TableHead>
+                <TableHead className="hidden sm:table-cell">Asignatura</TableHead>
+                <TableHead className="hidden md:table-cell">Descripción</TableHead>
+                <TableHead className="hidden md:table-cell">Profesor titular</TableHead>
+                <TableHead className="hidden sm:table-cell">Alumnos</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead className="w-24 text-right">Acciones</TableHead>
               </TableRow>
-            ) : (
-              filtered.map((g, idx) => {
-                const teacher = teacherById.get(g.teacherId);
-                return (
-                  <TableRow key={g.id} className="hover:bg-muted/30">
-                    <TableCell className="font-medium text-muted-foreground">{idx + 1}</TableCell>
-                    <TableCell className="font-medium">{g.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{g.subject ?? '—'}</TableCell>
-                    <TableCell className="text-muted-foreground max-w-[260px] truncate" title={g.description ?? undefined}>
-                      {g.description ?? '—'}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {teacher ? `${teacher.firstName} ${teacher.lastName}` : '—'}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="gap-1">
-                        <Users className="h-3 w-3" />
-                        {g.studentCount}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={g.active ? 'default' : 'secondary'}>
-                        {g.active ? 'Activo' : 'Inactivo'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Editar grupo ${g.name}`}
-                          onClick={() => openEdit(g)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Borrar grupo ${g.name}`}
-                          className="hover:text-destructive"
-                          onClick={() => handleDelete(g.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                    No hay grupos que coincidan con la búsqueda.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filtered.map((g, idx) => {
+                  const teacher = teacherById.get(g.teacherId);
+                  return (
+                    <TableRow key={g.id} className="hover:bg-muted/30">
+                      <TableCell className="font-medium text-muted-foreground hidden sm:table-cell">{idx + 1}</TableCell>
+                      <TableCell className="font-medium">{g.name}</TableCell>
+                      <TableCell className="text-muted-foreground hidden sm:table-cell">{g.subject ?? '—'}</TableCell>
+                      <TableCell className="text-muted-foreground max-w-[260px] truncate hidden md:table-cell" title={g.description ?? undefined}>
+                        {g.description ?? '—'}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground hidden md:table-cell">
+                        {teacher ? `${teacher.firstName} ${teacher.lastName}` : '—'}
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <Badge variant="secondary" className="gap-1">
+                          <Users className="h-3 w-3" />
+                          {g.studentCount}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={g.active ? 'default' : 'secondary'}>
+                          {g.active ? 'Activo' : 'Inactivo'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Editar grupo ${g.name}`}
+                            onClick={() => openEdit(g)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Borrar grupo ${g.name}`}
+                            className="hover:text-destructive"
+                            onClick={() => handleDelete(g.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       <GroupSheet

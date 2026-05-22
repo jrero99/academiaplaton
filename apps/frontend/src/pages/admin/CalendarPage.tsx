@@ -299,7 +299,7 @@ export function CalendarPage() {
         breadcrumbs={[{ label: 'Admin', to: '/admin' }, { label: 'Calendario' }]}
       />
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
+      <div className="flex flex-col gap-3 mb-4">
         <div className="flex items-center gap-2">
           <label htmlFor="calendar-center" className="text-sm font-medium text-muted-foreground">
             Centro
@@ -324,7 +324,7 @@ export function CalendarPage() {
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 self-start">
           {/* Selector de vista */}
           <div
             role="group"
@@ -366,6 +366,7 @@ export function CalendarPage() {
           <Button
             onClick={() => openCreate(toIsoDate(weekStart), '18:00')}
             aria-label="Nueva sesión"
+            className="self-start"
           >
             <Plus className="h-4 w-4" />
             Nueva sesión
@@ -382,54 +383,61 @@ export function CalendarPage() {
         </div>
       )}
 
-      {viewMode === 'week' && (
-        <>
-          <WeekCalendar
-            weekStart={weekStart}
-            sessions={visibleSessions}
-            groups={centerGroups}
-            teachers={MOCK_TEACHERS}
-            dayCount={WEEK_DAYS}
-            onCellClick={({ date, startTime }) => openCreate(date, startTime)}
-            onSessionClick={openEdit}
-            onSessionDrop={handleSessionDrop}
-          />
-          <p className="mt-3 text-xs text-muted-foreground">
-            {isTeacher
-              ? 'Vista de sólo lectura: aquí ves únicamente las sesiones que tienes asignadas.'
-              : 'Click en una celda vacía para crear una sesión. Click en un bloque para editarla o eliminarla. Arrastra un bloque a otro slot para moverlo (snap a 15 min).'}
-          </p>
-        </>
-      )}
+      {/* Aviso en pantallas muy pequeñas donde el calendario se desborda */}
+      <p className="mb-3 text-xs text-muted-foreground sm:hidden">
+        Para una mejor experiencia, gira el dispositivo o usa una pantalla más grande.
+      </p>
 
-      {viewMode === 'month' && (
-        <>
-          <MonthCalendar
-            monthDate={currentDate}
-            sessions={visibleSessions}
-            groups={centerGroups}
-            onDayClick={handleDayClick}
-          />
-          <p className="mt-3 text-xs text-muted-foreground">
-            Click en cualquier día para ir a la vista semanal correspondiente.
-          </p>
-        </>
-      )}
+      <div className="overflow-x-auto">
+        {viewMode === 'week' && (
+          <>
+            <WeekCalendar
+              weekStart={weekStart}
+              sessions={visibleSessions}
+              groups={centerGroups}
+              teachers={MOCK_TEACHERS}
+              dayCount={WEEK_DAYS}
+              onCellClick={({ date, startTime }) => openCreate(date, startTime)}
+              onSessionClick={openEdit}
+              onSessionDrop={handleSessionDrop}
+            />
+            <p className="mt-3 text-xs text-muted-foreground">
+              {isTeacher
+                ? 'Vista de sólo lectura: aquí ves únicamente las sesiones que tienes asignadas.'
+                : 'Click en una celda vacía para crear una sesión. Click en un bloque para editarla o eliminarla. Arrastra un bloque a otro slot para moverlo (snap a 15 min).'}
+            </p>
+          </>
+        )}
 
-      {viewMode === 'year' && (
-        <>
-          <YearCalendar
-            year={year}
-            sessions={visibleSessions}
-            onDayClick={handleDayClick}
-            onMonthClick={handleMonthClick}
-          />
-          <p className="mt-3 text-xs text-muted-foreground">
-            Intensidad por día = número de sesiones. Click en el título de un mes para abrirlo;
-            click en un día para ir a su semana.
-          </p>
-        </>
-      )}
+        {viewMode === 'month' && (
+          <>
+            <MonthCalendar
+              monthDate={currentDate}
+              sessions={visibleSessions}
+              groups={centerGroups}
+              onDayClick={handleDayClick}
+            />
+            <p className="mt-3 text-xs text-muted-foreground">
+              Click en cualquier día para ir a la vista semanal correspondiente.
+            </p>
+          </>
+        )}
+
+        {viewMode === 'year' && (
+          <>
+            <YearCalendar
+              year={year}
+              sessions={visibleSessions}
+              onDayClick={handleDayClick}
+              onMonthClick={handleMonthClick}
+            />
+            <p className="mt-3 text-xs text-muted-foreground">
+              Intensidad por día = número de sesiones. Click en el título de un mes para abrirlo;
+              click en un día para ir a su semana.
+            </p>
+          </>
+        )}
+      </div>
 
       <SessionSheet
         open={sheet.open}
