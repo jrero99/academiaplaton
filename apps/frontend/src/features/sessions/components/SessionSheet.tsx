@@ -99,7 +99,7 @@ function SessionForm({
   const teacher = selectedGroup
     ? teachers.find((t) => t.id === selectedGroup.teacherId)
     : undefined;
-  const color = teacher ? teacherColor(teacher.id) : undefined;
+  const color = teacher ? teacherColor(teacher.id, teacher.color) : undefined;
 
   // Detección de conflicto en vivo: misma fecha + (mismo profesor o mismo grupo)
   // + solapamiento horario. Excluye la sesión actual si estamos editando.

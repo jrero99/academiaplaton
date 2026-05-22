@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { GroupDto, SessionDto } from '@academiaplaton/shared';
+import type { Teacher } from '@/features/teachers/types';
 import {
   addDays,
   getMonthGridRowCount,
@@ -17,15 +18,17 @@ interface Props {
   monthDate: Date; // cualquier fecha dentro del mes a mostrar
   sessions: SessionDto[];
   groups: GroupDto[];
+  teachers: Teacher[];
   onDayClick: (date: Date) => void;
 }
 
-export function MonthCalendar({ monthDate, sessions, groups, onDayClick }: Props) {
+export function MonthCalendar({ monthDate, sessions, groups, teachers, onDayClick }: Props) {
   const gridStart = useMemo(() => getMonthGridStart(monthDate), [monthDate]);
   const rowCount = useMemo(() => getMonthGridRowCount(monthDate), [monthDate]);
   const currentMonth = startOfMonth(monthDate).getMonth();
 
   const groupById = useMemo(() => new Map(groups.map((g) => [g.id, g])), [groups]);
+  const teacherById = useMemo(() => new Map(teachers.map((t) => [t.id, t])), [teachers]);
 
   // Sesiones agrupadas por iso de fecha
   const sessionsByDay = useMemo(() => {
@@ -106,7 +109,8 @@ export function MonthCalendar({ monthDate, sessions, groups, onDayClick }: Props
               <div className="flex flex-col gap-0.5 overflow-hidden">
                 {visiblePills.map((s) => {
                   const group = groupById.get(s.groupId);
-                  const color = teacherColor(s.teacherId);
+                  const teacher = teacherById.get(s.teacherId);
+                  const color = teacherColor(s.teacherId, teacher?.color);
                   return (
                     <div
                       key={s.id}

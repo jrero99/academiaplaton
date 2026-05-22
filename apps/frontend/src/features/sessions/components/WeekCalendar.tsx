@@ -328,7 +328,7 @@ function DayColumn({
         );
         const group = groupById.get(s.groupId);
         const teacher = teacherById.get(s.teacherId);
-        const color = teacherColor(s.teacherId);
+        const color = teacherColor(s.teacherId, teacher?.color);
 
         // Clip si la sesión sale del rango visible
         const visibleTop = Math.max(0, top);

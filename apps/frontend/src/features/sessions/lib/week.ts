@@ -119,8 +119,21 @@ export function monthShortLabel(monthIndex: number): string {
   return MONTH_LABELS_ES[monthIndex]!.slice(0, 3).replace(/^./, (c) => c.toUpperCase());
 }
 
-// Color estable derivado del id del profesor (HSL pastel)
-export function teacherColor(teacherId: string): { bg: string; border: string; text: string } {
+import { getTeacherColor, type TeacherColorId } from '@academiaplaton/shared';
+
+// Color para representar un profesor en el calendario.
+// Si el profesor tiene un color persistido (asignado al crearlo), se usa la paleta
+// cerrada de la marca. Si no, se cae al hash determinista por id para no dejar
+// bloques transparentes en sesiones cuyo profesor aún no tenga color asignado.
+export function teacherColor(
+  teacherId: string,
+  colorId?: TeacherColorId | null,
+): { bg: string; border: string; text: string } {
+  const palette = getTeacherColor(colorId);
+  if (palette) {
+    return { bg: palette.bg, border: palette.border, text: palette.text };
+  }
+
   let hash = 0;
   for (let i = 0; i < teacherId.length; i++) {
     hash = (hash << 5) - hash + teacherId.charCodeAt(i);
