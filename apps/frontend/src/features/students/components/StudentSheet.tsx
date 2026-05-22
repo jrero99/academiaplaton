@@ -32,6 +32,22 @@ const guardianSchema = z.object({
     .optional(),
 });
 
+const PAYMENT_METHOD_OPTIONS = ['cash', 'sepa', 'bank_transfer'] as const;
+type PaymentMethodOption = (typeof PAYMENT_METHOD_OPTIONS)[number];
+
+const PAYMENT_METHOD_LABELS: Record<PaymentMethodOption, string> = {
+  cash: 'Metálico',
+  sepa: 'SEPA',
+  bank_transfer: 'Transferencia',
+};
+
+// Coalescencia defensiva: si el alumno editado trae 'other' (valor heredado no
+// ofrecido en el form), se normaliza a 'cash' para no dejar el select sin valor.
+function coercePaymentMethod(value: string | undefined): PaymentMethodOption {
+  if (value === 'sepa' || value === 'bank_transfer') return value;
+  return 'cash';
+}
+
 const studentSchema = z.object({
   firstName: z.string().min(1, 'El nombre es obligatorio').max(80),
   lastName: z.string().min(1, 'Los apellidos son obligatorios').max(120),
@@ -55,6 +71,7 @@ const studentSchema = z.object({
     .nonnegative('Debe ser >= 0')
     .max(99999, 'Importe demasiado alto')
     .optional(),
+  paymentMethod: z.enum(PAYMENT_METHOD_OPTIONS),
   guardians: z.array(guardianSchema).max(4, 'Máximo 4 tutores'),
 });
 
@@ -116,6 +133,7 @@ function StudentForm({
             address: student.address ?? '',
             notes: student.notes ?? '',
             monthlyFee: student.monthlyFee,
+            paymentMethod: coercePaymentMethod(student.paymentMethod),
             guardians: student.guardians.map((g) => ({
               firstName: g.firstName,
               lastName: g.lastName,
@@ -134,6 +152,7 @@ function StudentForm({
             address: '',
             notes: '',
             monthlyFee: undefined,
+            paymentMethod: 'cash' as const,
             guardians: [],
           },
   });
@@ -305,6 +324,28 @@ function StudentForm({
           />
           {errors.monthlyFee && (
             <p role="alert" className="text-xs text-destructive">{errors.monthlyFee.message}</p>
+          )}
+        </div>
+
+        {/* Método de pago */}
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="student-paymentMethod" className="text-sm font-medium">
+            Método de pago <span aria-hidden="true" className="text-destructive">*</span>
+          </label>
+          <select
+            id="student-paymentMethod"
+            aria-invalid={!!errors.paymentMethod}
+            className={selectClassName}
+            {...register('paymentMethod')}
+          >
+            {PAYMENT_METHOD_OPTIONS.map((m) => (
+              <option key={m} value={m}>
+                {PAYMENT_METHOD_LABELS[m]}
+              </option>
+            ))}
+          </select>
+          {errors.paymentMethod && (
+            <p role="alert" className="text-xs text-destructive">{errors.paymentMethod.message}</p>
           )}
         </div>
 

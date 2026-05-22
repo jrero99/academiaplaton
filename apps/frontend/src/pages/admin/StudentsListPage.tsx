@@ -26,6 +26,14 @@ import {
 } from '@/features/students/components/StudentSheet';
 import type { StudentDto } from '@academiaplaton/shared';
 
+// Cubre las 3 opciones del formulario + 'other' por si llega un valor heredado desde backend.
+const PAYMENT_METHOD_LABELS_TABLE: Record<string, string> = {
+  cash: 'Metálico',
+  sepa: 'SEPA',
+  bank_transfer: 'Transferencia',
+  other: 'Otro',
+};
+
 const dateFmt = new Intl.DateTimeFormat('es-ES', {
   day: '2-digit',
   month: '2-digit',
@@ -56,6 +64,7 @@ function formToStudentFields(data: StudentFormValues) {
     address: toOptional(data.address),
     notes: toOptional(data.notes),
     monthlyFee: data.monthlyFee,
+    paymentMethod: data.paymentMethod,
     guardians: data.guardians.map((g) => ({
       firstName: g.firstName,
       lastName: g.lastName,
@@ -165,7 +174,6 @@ export function StudentsListPage() {
       const newStudent: StudentDto = {
         id: crypto.randomUUID(),
         organizationId: ORG_ID,
-        paymentMethod: 'cash',
         createdAt: now,
         updatedAt: now,
         ...fields,
@@ -295,6 +303,7 @@ export function StudentsListPage() {
                 <TableHead className="hidden sm:table-cell">Email</TableHead>
                 <TableHead className="hidden md:table-cell">Teléfono</TableHead>
                 <TableHead className="hidden sm:table-cell">Cuota</TableHead>
+                <TableHead className="hidden md:table-cell">Pago</TableHead>
                 <TableHead className="hidden md:table-cell">Tutores</TableHead>
                 <TableHead className="w-24 text-right">Acciones</TableHead>
               </TableRow>
@@ -302,7 +311,7 @@ export function StudentsListPage() {
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                     No hay alumnos que coincidan con la búsqueda.
                   </TableCell>
                 </TableRow>
@@ -323,6 +332,9 @@ export function StudentsListPage() {
                     <TableCell className="text-muted-foreground hidden md:table-cell">{s.phone ?? '—'}</TableCell>
                     <TableCell className="text-muted-foreground hidden sm:table-cell">
                       {s.monthlyFee != null ? eurFmt.format(s.monthlyFee) : '—'}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground hidden md:table-cell">
+                      {PAYMENT_METHOD_LABELS_TABLE[s.paymentMethod] ?? s.paymentMethod}
                     </TableCell>
                     <TableCell className="text-muted-foreground hidden md:table-cell">{s.guardians.length}</TableCell>
                     <TableCell>
