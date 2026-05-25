@@ -60,6 +60,66 @@ const TEMPLATE_SEEDS: SeedTemplate[] = [
   { slug: 'banco', centerId: CENTER_MOLINOS, defaultAmount: '78.50' },
 ];
 
+// Gastos reales de abril 2026 extraídos del PDF de referencia del usuario.
+// Se siembran como Expense con originType='manual' para que el resumen
+// mensual cuadre visualmente con el PDF sin tener que ejecutar
+// generate-month. Los 0€ del PDF se omiten (no genera fila).
+// Nota: Nómines aparece como manual para que el visual coincida con el PDF;
+// cuando exista calendario real con sesiones y tarifas de profesor, los
+// salarios deberían venir de generate-month (originType='salary_auto').
+type SeedExpense = {
+  slug: string;
+  centerId: string;
+  amount: string;
+};
+
+const PDF_PERIOD = '2026-04';
+
+const EXPENSE_SEEDS_APR_2026: SeedExpense[] = [
+  { slug: 'lloguer',  centerId: CENTER_TERESAS, amount: '803.62'  },
+  { slug: 'lloguer',  centerId: CENTER_MOLINOS, amount: '1047.62' },
+  { slug: 'autonoms', centerId: CENTER_TERESAS, amount: '194.10'  },
+  { slug: 'autonoms', centerId: CENTER_MOLINOS, amount: '194.10'  },
+  { slug: 'nomines',  centerId: CENTER_TERESAS, amount: '973.57'  },
+  { slug: 'nomines',  centerId: CENTER_MOLINOS, amount: '663.91'  },
+  { slug: 's-social', centerId: CENTER_TERESAS, amount: '338.48'  },
+  { slug: 's-social', centerId: CENTER_MOLINOS, amount: '338.48'  },
+  { slug: 'endesa',   centerId: CENTER_TERESAS, amount: '96.45'   },
+  { slug: 'endesa',   centerId: CENTER_MOLINOS, amount: '54.22'   },
+  { slug: 'aigues',   centerId: CENTER_TERESAS, amount: '111.53'  },
+  // Aigües c2 = 0 → omitida.
+  { slug: 'gestoria', centerId: CENTER_TERESAS, amount: '139.27'  },
+  { slug: 'gestoria', centerId: CENTER_MOLINOS, amount: '139.27'  },
+  { slug: 'telefonia', centerId: CENTER_TERESAS, amount: '22.99'  },
+  { slug: 'telefonia', centerId: CENTER_MOLINOS, amount: '31.99'  },
+  // Rebuts comissió c1=0, c2=0 → ambas omitidas.
+  { slug: 'banco',    centerId: CENTER_TERESAS, amount: '78.50'   },
+  { slug: 'banco',    centerId: CENTER_MOLINOS, amount: '78.50'   },
+  // Material c1 = 0 → omitida.
+  { slug: 'material', centerId: CENTER_MOLINOS, amount: '39.89'   },
+  { slug: 'otros',    centerId: CENTER_TERESAS, amount: '365.00'  },
+  { slug: 'otros',    centerId: CENTER_MOLINOS, amount: '365.00'  },
+];
+
+// Ingresos manuales (no automáticos por cuotas) de abril 2026 según PDF.
+// Solo Teresas tiene desglose claro de efectivo; Molinos en el PDF sólo
+// aparece el total sin separar cash/recibos, así que no se siembra.
+type SeedIncome = {
+  centerId: string;
+  amount: string;
+  paymentMethod: 'cash' | 'sepa' | 'transfer' | 'other';
+  source: string;
+};
+
+const INCOME_SEEDS_APR_2026: SeedIncome[] = [
+  {
+    centerId: CENTER_TERESAS,
+    amount: '4250.00',
+    paymentMethod: 'cash',
+    source: 'Efectivo abril',
+  },
+];
+
 async function main() {
   const org = await prisma.organization.upsert({
     where: { id: PLATO_ORG_ID },
@@ -169,6 +229,93 @@ async function main() {
   }
   console.log(
     `Expense templates: ${tplCreated} created, ${tplUpdated} updated, ${tplSkipped} skipped`,
+  );
+
+  // Seed de gastos reales del PDF (abril 2026). Idempotente por
+  // (org, center, category, periodMonth, originType=manual). Si existe ya
+  // un Expense manual para esa combinación, se actualiza el amount; si no,
+  // se crea. Permite re-ejecutar el seed sin duplicar gastos del demo.
+  let expCreated = 0;
+  let expUpdated = 0;
+  let expSkipped = 0;
+  for (const seed of EXPENSE_SEEDS_APR_2026) {
+    const categoryId = categoryBySlug.get(seed.slug);
+    if (!categoryId) {
+      console.warn(`  ! Category slug "${seed.slug}" not found; skipping expense`);
+      expSkipped++;
+      continue;
+    }
+    const existing = await prisma.expense.findFirst({
+      where: {
+        organizationId: PLATO_ORG_ID,
+        centerId: seed.centerId,
+        categoryId,
+        periodMonth: PDF_PERIOD,
+        originType: 'manual',
+      },
+    });
+    if (existing) {
+      await prisma.expense.update({
+        where: { id: existing.id },
+        data: { amount: new Prisma.Decimal(seed.amount) },
+      });
+      expUpdated++;
+    } else {
+      await prisma.expense.create({
+        data: {
+          organizationId: PLATO_ORG_ID,
+          centerId: seed.centerId,
+          categoryId,
+          periodMonth: PDF_PERIOD,
+          amount: new Prisma.Decimal(seed.amount),
+          paymentMethod: 'sepa',
+          originType: 'manual',
+          active: true,
+        },
+      });
+      expCreated++;
+    }
+  }
+  console.log(
+    `Expenses ${PDF_PERIOD}: ${expCreated} created, ${expUpdated} updated, ${expSkipped} skipped`,
+  );
+
+  // Seed de ingresos manuales (efectivo) abril 2026. Idempotente por
+  // (org, center, periodMonth, source).
+  let incCreated = 0;
+  let incUpdated = 0;
+  for (const seed of INCOME_SEEDS_APR_2026) {
+    const existing = await prisma.income.findFirst({
+      where: {
+        organizationId: PLATO_ORG_ID,
+        centerId: seed.centerId,
+        periodMonth: PDF_PERIOD,
+        source: seed.source,
+      },
+    });
+    if (existing) {
+      await prisma.income.update({
+        where: { id: existing.id },
+        data: { amount: new Prisma.Decimal(seed.amount), paymentMethod: seed.paymentMethod },
+      });
+      incUpdated++;
+    } else {
+      await prisma.income.create({
+        data: {
+          organizationId: PLATO_ORG_ID,
+          centerId: seed.centerId,
+          periodMonth: PDF_PERIOD,
+          amount: new Prisma.Decimal(seed.amount),
+          paymentMethod: seed.paymentMethod,
+          source: seed.source,
+          active: true,
+        },
+      });
+      incCreated++;
+    }
+  }
+  console.log(
+    `Incomes ${PDF_PERIOD}: ${incCreated} created, ${incUpdated} updated`,
   );
 }
 
