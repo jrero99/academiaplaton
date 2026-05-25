@@ -89,6 +89,7 @@ const ca: Dict = {
   'nav.calendar': 'Calendari',
   'nav.centers': 'Acadèmies',
   'nav.invoices': 'Rebuts',
+  'nav.accounting': 'Comptabilitat',
   'nav.analytics': 'Analítica',
   'nav.messages': 'Missatges',
   'nav.settings': 'Configuració',
@@ -589,6 +590,163 @@ const ca: Dict = {
 
   // -------------------------------------------- sidebar
   'sidebar.settings_section': 'Configuració',
+
+  // -------------------------------------------- comuns extra
+  'common.loading': 'Carregant…',
+
+  // ============================================================ alumnes (extra)
+  'students.active.helper':
+    "Els alumnes inactius no es comptabilitzen en el resum mensual de comptabilitat.",
+  'students.filter.status_active': 'Actius',
+  'students.filter.status_inactive': 'Baixes',
+  'students.filter.status_any': 'Tots',
+  'students.filter.status_aria': "Filtrar per estat de l'alumne",
+  'students.badge.inactive': 'Baixa',
+  'student_sheet.field.active': "Alumne actiu",
+
+  // ============================================================ comptabilitat
+  'accounting.title': 'Comptabilitat',
+  'accounting.menu': 'Comptabilitat',
+  'accounting.empty': 'Encara no hi ha dades per a aquest mes.',
+  'accounting.no_admin': "Accés restringit a administradors.",
+  'accounting.back_to_dashboard': 'Tornar al tauler',
+  'accounting.center.all': 'Totes les acadèmies',
+  'accounting.center.inactive_notice': "L'acadèmia {name} està inactiva.",
+  'accounting.period_nav_aria': 'Navegació de mes',
+  'accounting.prev_month': 'Mes anterior',
+  'accounting.next_month': 'Mes següent',
+  'accounting.today': 'Avui',
+  'accounting.banner.live_reference':
+    "Els imports reflecteixen la situació actual, no la històrica.",
+
+  'accounting.col.concept': 'Concepte',
+  'accounting.col.total': 'Total',
+
+  'accounting.income.title': 'Ingressos',
+  'accounting.income.subtotal': 'Subtotal ingressos',
+  'accounting.income.fees_auto': 'Rebuts (alumnes actius)',
+  'accounting.income.manual': 'Ingressos manuals',
+  'accounting.income.add': 'Nou ingrés',
+  'accounting.income.add_row': "Afegir ingrés",
+  'accounting.income.no_manual': 'Sense ingressos manuals aquest mes.',
+  'accounting.income.edit_aria': "Editar ingrés {source}",
+
+  'accounting.expense.title': 'Despeses',
+  'accounting.expense.subtotal': 'Subtotal despeses',
+  'accounting.expense.salaries': 'Salaris',
+  'accounting.expense.no_salaries': 'Sense salaris generats aquest mes.',
+  'accounting.expense.add': 'Nova despesa',
+  'accounting.expense.add_in_category': 'Afegir',
+  'accounting.expense.category_subtotal': 'Subtotal {name}',
+  'accounting.expense.salary_override': 'override',
+  'accounting.expense.salary_paid': 'Pagat',
+  'accounting.expense.salary_pending': 'Pendent',
+  'accounting.expense.edit_aria': "Editar despesa de {amount}",
+  'accounting.expense.edit_salary_aria': "Editar salari de {name}",
+
+  'accounting.profit.title': 'Benefici',
+  'accounting.profit.aria_label': 'Benefici (ingressos menys despeses)',
+  'accounting.profit.cell_aria': 'Benefici de {center}: {amount}',
+  'accounting.profit.grand_aria': 'Benefici total: {amount}',
+
+  'accounting.generate_month': 'Generar mes',
+  'accounting.generate_month.loading': 'Generant…',
+  'accounting.generate_month.confirm':
+    "Vols generar les despeses recurrents i els salaris per a {month}? És idempotent.",
+  'accounting.generate_month.result':
+    'Generats: {templates} despeses, {salaries} salaris · {warnings} avisos.',
+
+  'accounting.filter.payment_method': 'Mètode de pagament',
+  'accounting.payment_method.all': 'Tots',
+  'accounting.payment_method.sepa': 'SEPA',
+  'accounting.payment_method.transfer': 'Transferència',
+  'accounting.payment_method.cash': 'Efectiu',
+  'accounting.payment_method.other': 'Altres',
+
+  'accounting.footer.by_method': 'Net per mètode de pagament',
+
+  // -- categories
+  'accounting.category.title': 'Categories de despesa',
+  'accounting.category.manage': 'Categories',
+  'accounting.category.desc': 'Gestiona les categories de despesa de la teva organització.',
+  'accounting.category.new': 'Nova categoria',
+  'accounting.category.empty': 'Encara no hi ha categories.',
+  'accounting.category.slug': 'Identificador (slug)',
+  'accounting.category.sort_order': 'Ordre',
+  'accounting.category.is_salary': 'Categoria de salari',
+  'accounting.category.active': 'Categoria activa',
+  'accounting.category.badge_salary': 'Salari',
+  'accounting.category.delete_confirm': "Eliminar la categoria «{name}»?",
+  'accounting.category.edit_aria': "Editar categoria {name}",
+  'accounting.category.delete_aria': "Eliminar categoria {name}",
+
+  // -- templates
+  'accounting.template.title': 'Plantilles recurrents',
+  'accounting.template.manage': 'Plantilles',
+  'accounting.template.desc':
+    "Despeses fixes que es generen cada mes en executar «Generar mes».",
+  'accounting.template.new': 'Nova plantilla',
+  'accounting.template.empty': 'Encara no hi ha plantilles.',
+  'accounting.template.col_category': 'Categoria',
+  'accounting.template.day_of_month': 'dia',
+  'accounting.template.delete_confirm': 'Eliminar aquesta plantilla?',
+  'accounting.template.edit_aria': 'Editar plantilla',
+  'accounting.template.delete_aria': 'Eliminar plantilla',
+  'accounting.template.field.center_placeholder': "Selecciona acadèmia",
+  'accounting.template.field.category_placeholder': 'Selecciona categoria',
+  'accounting.template.field.default_amount': 'Import per defecte',
+  'accounting.template.field.charge_day': 'Dia del mes (1-31)',
+  'accounting.template.field.payment_method': 'Mètode de pagament',
+  'accounting.template.field.description': 'Descripció',
+  'accounting.template.field.active': 'Plantilla activa',
+
+  // -- expense sheet
+  'accounting.expense_sheet.title_create': 'Nova despesa',
+  'accounting.expense_sheet.title_edit': 'Editar despesa',
+  'accounting.expense_sheet.desc_full':
+    'Despesa manual associada a una categoria, centre i mes concrets.',
+  'accounting.expense_sheet.desc_limited':
+    'Aquesta despesa s’ha generat automàticament; només pots modificar l’import, la data de pagament i les notes.',
+  'accounting.expense_sheet.origin_template': 'Generada des d’una plantilla recurrent.',
+  'accounting.expense_sheet.origin_salary': 'Salari calculat automàticament.',
+  'accounting.expense_sheet.delete_confirm': 'Eliminar aquesta despesa?',
+  'accounting.expense_sheet.field.category': 'Categoria',
+  'accounting.expense_sheet.field.category_placeholder': 'Selecciona categoria',
+  'accounting.expense_sheet.field.category_salary_suffix': '(salari)',
+  'accounting.expense_sheet.field.center': 'Centre',
+  'accounting.expense_sheet.field.center_placeholder': "Selecciona centre",
+  'accounting.expense_sheet.field.period': 'Mes (YYYY-MM)',
+  'accounting.expense_sheet.field.amount': 'Import',
+  'accounting.expense_sheet.field.payment_method': 'Mètode de pagament',
+  'accounting.expense_sheet.field.paid_at': 'Data de pagament',
+  'accounting.expense_sheet.field.notes': 'Notes',
+
+  // -- income sheet
+  'accounting.income_sheet.title_create': 'Nou ingrés',
+  'accounting.income_sheet.title_edit': 'Editar ingrés',
+  'accounting.income_sheet.desc':
+    'Ingrés manual del centre (extra-cuotes, ajudes, devolucions, etc.).',
+  'accounting.income_sheet.delete_confirm': 'Eliminar aquest ingrés?',
+  'accounting.income_sheet.field.center': 'Centre',
+  'accounting.income_sheet.field.center_placeholder': "Selecciona centre",
+  'accounting.income_sheet.field.period': 'Mes (YYYY-MM)',
+  'accounting.income_sheet.field.source': 'Concepte',
+  'accounting.income_sheet.field.amount': 'Import',
+  'accounting.income_sheet.field.payment_method': 'Mètode de pagament',
+  'accounting.income_sheet.field.received_at': 'Data de recepció',
+  'accounting.income_sheet.field.notes': 'Notes',
+
+  // -- salary sheet
+  'accounting.salary_sheet.title': 'Salari del mes',
+  'accounting.salary_sheet.desc': 'Detall del salari calculat per a {teacher}.',
+  'accounting.salary_sheet.hours_worked': 'Hores treballades',
+  'accounting.salary_sheet.hourly_rate': 'Tarifa per hora',
+  'accounting.salary_sheet.computed': 'Calculat',
+  'accounting.salary_sheet.amount': "Import (override)",
+  'accounting.salary_sheet.paid_at': 'Data de pagament',
+  'accounting.salary_sheet.notes': 'Notes',
+  'accounting.salary_sheet.not_generated':
+    "Aquest salari encara no s'ha materialitzat. Executa «Generar mes» per crear-lo.",
 };
 
 const es: Dict = {
@@ -657,6 +815,7 @@ const es: Dict = {
   'nav.calendar': 'Calendario',
   'nav.centers': 'Academias',
   'nav.invoices': 'Recibos',
+  'nav.accounting': 'Contabilidad',
   'nav.analytics': 'Analytics',
   'nav.messages': 'Mensajes',
   'nav.settings': 'Ajustes',
@@ -1192,6 +1351,166 @@ const es: Dict = {
 
   // -------------------------------------------- sidebar
   'sidebar.settings_section': 'Configuración',
+
+  // -------------------------------------------- comunes extra
+  'common.loading': 'Cargando…',
+
+  // ============================================================ alumnos (extra)
+  'students.active.helper':
+    'Los alumnos inactivos no se contabilizan en el resumen mensual de contabilidad.',
+  'students.filter.status_active': 'Activos',
+  'students.filter.status_inactive': 'Bajas',
+  'students.filter.status_any': 'Todos',
+  'students.filter.status_aria': 'Filtrar por estado del alumno',
+  'students.badge.inactive': 'Baja',
+  'student_sheet.field.active': 'Alumno activo',
+
+  // ============================================================ contabilidad
+  'accounting.title': 'Contabilidad',
+  'accounting.menu': 'Contabilidad',
+  'accounting.empty': 'Aún no hay datos para este mes.',
+  'accounting.no_admin': 'Acceso restringido a administradores.',
+  'accounting.back_to_dashboard': 'Volver al panel',
+  'accounting.center.all': 'Todas las academias',
+  'accounting.center.inactive_notice': 'La academia {name} está inactiva.',
+  'accounting.period_nav_aria': 'Navegación de mes',
+  'accounting.prev_month': 'Mes anterior',
+  'accounting.next_month': 'Mes siguiente',
+  'accounting.today': 'Hoy',
+  'accounting.banner.live_reference':
+    'Los importes reflejan la situación actual, no la histórica.',
+
+  'accounting.col.concept': 'Concepto',
+  'accounting.col.total': 'Total',
+
+  'accounting.income.title': 'Ingresos',
+  'accounting.income.subtotal': 'Subtotal ingresos',
+  'accounting.income.fees_auto': 'Recibos (alumnos activos)',
+  'accounting.income.manual': 'Ingresos manuales',
+  'accounting.income.add': 'Nuevo ingreso',
+  'accounting.income.add_row': 'Añadir ingreso',
+  'accounting.income.no_manual': 'Sin ingresos manuales este mes.',
+  'accounting.income.edit_aria': 'Editar ingreso {source}',
+
+  'accounting.expense.title': 'Gastos',
+  'accounting.expense.subtotal': 'Subtotal gastos',
+  'accounting.expense.salaries': 'Salarios',
+  'accounting.expense.no_salaries': 'Sin salarios generados este mes.',
+  'accounting.expense.add': 'Nuevo gasto',
+  'accounting.expense.add_in_category': 'Añadir',
+  'accounting.expense.category_subtotal': 'Subtotal {name}',
+  'accounting.expense.salary_override': 'override',
+  'accounting.expense.salary_paid': 'Pagado',
+  'accounting.expense.salary_pending': 'Pendiente',
+  'accounting.expense.edit_aria': 'Editar gasto de {amount}',
+  'accounting.expense.edit_salary_aria': 'Editar salario de {name}',
+
+  'accounting.profit.title': 'Beneficio',
+  'accounting.profit.aria_label': 'Beneficio (ingresos menos gastos)',
+  'accounting.profit.cell_aria': 'Beneficio de {center}: {amount}',
+  'accounting.profit.grand_aria': 'Beneficio total: {amount}',
+
+  'accounting.generate_month': 'Generar mes',
+  'accounting.generate_month.loading': 'Generando…',
+  'accounting.generate_month.confirm':
+    '¿Generar gastos recurrentes y salarios para {month}? Es idempotente.',
+  'accounting.generate_month.result':
+    'Generados: {templates} gastos, {salaries} salarios · {warnings} avisos.',
+
+  'accounting.filter.payment_method': 'Método de pago',
+  'accounting.payment_method.all': 'Todos',
+  'accounting.payment_method.sepa': 'SEPA',
+  'accounting.payment_method.transfer': 'Transferencia',
+  'accounting.payment_method.cash': 'Efectivo',
+  'accounting.payment_method.other': 'Otros',
+
+  'accounting.footer.by_method': 'Neto por método de pago',
+
+  // -- categorias
+  'accounting.category.title': 'Categorías de gasto',
+  'accounting.category.manage': 'Categorías',
+  'accounting.category.desc':
+    'Gestiona las categorías de gasto de tu organización.',
+  'accounting.category.new': 'Nueva categoría',
+  'accounting.category.empty': 'Aún no hay categorías.',
+  'accounting.category.slug': 'Identificador (slug)',
+  'accounting.category.sort_order': 'Orden',
+  'accounting.category.is_salary': 'Categoría de salario',
+  'accounting.category.active': 'Categoría activa',
+  'accounting.category.badge_salary': 'Salario',
+  'accounting.category.delete_confirm': '¿Eliminar la categoría «{name}»?',
+  'accounting.category.edit_aria': 'Editar categoría {name}',
+  'accounting.category.delete_aria': 'Eliminar categoría {name}',
+
+  // -- plantillas
+  'accounting.template.title': 'Plantillas recurrentes',
+  'accounting.template.manage': 'Plantillas',
+  'accounting.template.desc':
+    'Gastos fijos que se generan cada mes al ejecutar «Generar mes».',
+  'accounting.template.new': 'Nueva plantilla',
+  'accounting.template.empty': 'Aún no hay plantillas.',
+  'accounting.template.col_category': 'Categoría',
+  'accounting.template.day_of_month': 'día',
+  'accounting.template.delete_confirm': '¿Eliminar esta plantilla?',
+  'accounting.template.edit_aria': 'Editar plantilla',
+  'accounting.template.delete_aria': 'Eliminar plantilla',
+  'accounting.template.field.center_placeholder': 'Selecciona academia',
+  'accounting.template.field.category_placeholder': 'Selecciona categoría',
+  'accounting.template.field.default_amount': 'Importe por defecto',
+  'accounting.template.field.charge_day': 'Día del mes (1-31)',
+  'accounting.template.field.payment_method': 'Método de pago',
+  'accounting.template.field.description': 'Descripción',
+  'accounting.template.field.active': 'Plantilla activa',
+
+  // -- expense sheet
+  'accounting.expense_sheet.title_create': 'Nuevo gasto',
+  'accounting.expense_sheet.title_edit': 'Editar gasto',
+  'accounting.expense_sheet.desc_full':
+    'Gasto manual asociado a una categoría, centro y mes concretos.',
+  'accounting.expense_sheet.desc_limited':
+    'Este gasto se generó automáticamente; solo puedes modificar el importe, la fecha de pago y las notas.',
+  'accounting.expense_sheet.origin_template':
+    'Generado desde una plantilla recurrente.',
+  'accounting.expense_sheet.origin_salary':
+    'Salario calculado automáticamente.',
+  'accounting.expense_sheet.delete_confirm': '¿Eliminar este gasto?',
+  'accounting.expense_sheet.field.category': 'Categoría',
+  'accounting.expense_sheet.field.category_placeholder': 'Selecciona categoría',
+  'accounting.expense_sheet.field.category_salary_suffix': '(salario)',
+  'accounting.expense_sheet.field.center': 'Centro',
+  'accounting.expense_sheet.field.center_placeholder': 'Selecciona centro',
+  'accounting.expense_sheet.field.period': 'Mes (YYYY-MM)',
+  'accounting.expense_sheet.field.amount': 'Importe',
+  'accounting.expense_sheet.field.payment_method': 'Método de pago',
+  'accounting.expense_sheet.field.paid_at': 'Fecha de pago',
+  'accounting.expense_sheet.field.notes': 'Notas',
+
+  // -- income sheet
+  'accounting.income_sheet.title_create': 'Nuevo ingreso',
+  'accounting.income_sheet.title_edit': 'Editar ingreso',
+  'accounting.income_sheet.desc':
+    'Ingreso manual del centro (extra-cuotas, ayudas, devoluciones, etc.).',
+  'accounting.income_sheet.delete_confirm': '¿Eliminar este ingreso?',
+  'accounting.income_sheet.field.center': 'Centro',
+  'accounting.income_sheet.field.center_placeholder': 'Selecciona centro',
+  'accounting.income_sheet.field.period': 'Mes (YYYY-MM)',
+  'accounting.income_sheet.field.source': 'Concepto',
+  'accounting.income_sheet.field.amount': 'Importe',
+  'accounting.income_sheet.field.payment_method': 'Método de pago',
+  'accounting.income_sheet.field.received_at': 'Fecha de recepción',
+  'accounting.income_sheet.field.notes': 'Notas',
+
+  // -- salary sheet
+  'accounting.salary_sheet.title': 'Salario del mes',
+  'accounting.salary_sheet.desc': 'Detalle del salario calculado para {teacher}.',
+  'accounting.salary_sheet.hours_worked': 'Horas trabajadas',
+  'accounting.salary_sheet.hourly_rate': 'Tarifa por hora',
+  'accounting.salary_sheet.computed': 'Calculado',
+  'accounting.salary_sheet.amount': 'Importe (override)',
+  'accounting.salary_sheet.paid_at': 'Fecha de pago',
+  'accounting.salary_sheet.notes': 'Notas',
+  'accounting.salary_sheet.not_generated':
+    'Este salario aún no se ha materializado. Ejecuta «Generar mes» para crearlo.',
 };
 
 const dictionaries: Record<Language, Dict> = { ca, es };

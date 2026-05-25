@@ -1,40 +1,34 @@
 import type { RequestHandler } from 'express';
-import { ErrorCodes, type UserRole } from '@academiaplaton/shared';
+import { type UserRole } from '@academiaplaton/shared';
 import { AppError } from '../lib/AppError.js';
 
 // Middleware que restringe el acceso a endpoints solo-admin.
 //
 // FIXME: cuando aterrice el módulo auth (ver CLAUDE.md §2.a), este middleware
 // debe leer `req.user.role` (o el array `roles` de la membresía resuelta por
-// `tenantContext`) y comprobar que incluye 'admin'. Mientras tanto, mantenemos
-// el header `x-user-role` opcional que el frontend (mock-users) ya envía, de
-// modo que el bloqueo funciona en dev contra el flujo manager/teacher pero
-// nunca debe considerarse seguro hasta que la auth real esté en sitio.
+// `tenantContext`) y comprobar que incluye 'admin'. Mientras tanto, seguimos
+// usando el header `x-user-role` que el frontend (mock-users) envía, pero
+// la política ahora es **fail-closed** y coherente con el resto del backend:
+// sin auth real, ningún cliente externo debería poder llegar a un endpoint
+// admin solo por omitir un header. Esto se considera mock pero seguro por
+// defecto — al implementar auth real, sustituir lectura de header por
+// `req.user.role` proveniente del JWT validado.
 //
-// Comportamiento actual:
-//   1. Si el header `x-user-role` viene con un valor distinto a 'admin',
-//      respondemos 403 inmediatamente (caso: manager intentando acceder).
-//   2. Si no viene el header (auth aún no implementada), dejamos pasar — esto
-//      preserva el flujo de los demás módulos donde tampoco hay auth real
-//      y solo este módulo todavía no la requiere.
+// Comportamiento actual (fail-closed):
+//   1. Si NO viene el header `x-user-role` (o viene vacío), respondemos
+//      401 UNAUTHORIZED — no podemos identificar al usuario.
+//   2. Si viene y el rol NO es 'admin', respondemos 403 FORBIDDEN — usuario
+//      identificado pero sin permisos suficientes (caso: manager/teacher).
+//   3. Si viene y es 'admin', dejamos pasar.
 export const requireAdmin: RequestHandler = (req, _res, next) => {
   const raw = req.header('x-user-role');
   if (raw == null || raw.trim() === '') {
-    // Auth no implementada todavía: no podemos verificar admin. Marcamos en
-    // logs (vía pino-http req.log si está disponible) y dejamos pasar.
-    // FIXME: cuando exista auth, esto debe pasar a 401 UNAUTHORIZED.
-    next();
+    next(AppError.unauthorized('Authentication required'));
     return;
   }
   const role = raw.trim() as UserRole;
   if (role !== 'admin') {
-    next(
-      new AppError(
-        403,
-        ErrorCodes.FORBIDDEN,
-        'This endpoint is restricted to administrators',
-      ),
-    );
+    next(AppError.forbidden('Admin role required'));
     return;
   }
   next();

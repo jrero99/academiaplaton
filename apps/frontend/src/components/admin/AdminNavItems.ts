@@ -8,6 +8,7 @@ import {
   Clock,
   Building2,
   Receipt,
+  Calculator,
   BarChart3,
   MessageSquare,
   Settings,
@@ -36,6 +37,7 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
   { to: '/admin/clocking', labelKey: 'nav.clocking', icon: Clock },
   { to: '/admin/centers', labelKey: 'nav.centers', icon: Building2, roles: ['admin'] },
   { to: '/admin/invoices', labelKey: 'nav.invoices', icon: Receipt, roles: ['admin', 'center_manager'] },
+  { to: '/admin/accounting', labelKey: 'nav.accounting', icon: Calculator, roles: ['admin'] },
   { to: '/admin/analytics', labelKey: 'nav.analytics', icon: BarChart3, roles: ['admin', 'center_manager'] },
 ];
 

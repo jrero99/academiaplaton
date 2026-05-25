@@ -9,8 +9,18 @@ import {
 } from 'react';
 import type { AuthUser } from '@/features/auth/types';
 import { MOCK_USERS } from '@/features/auth/data/mock-users';
+import { setAuthRole } from '@/lib/api';
 
 const STORAGE_KEY = 'plato.auth.currentUserId';
+
+// Determina el rol "principal" que enviamos como cabecera x-user-role al
+// backend mientras no haya auth real. Si el usuario tiene 'admin', usamos
+// 'admin' (caso de roles compuestos como admin+teacher); si no, el primer rol.
+function pickPrimaryRole(user: AuthUser | null): string | null {
+  if (!user) return null;
+  if (user.roles.includes('admin')) return 'admin';
+  return user.roles[0] ?? null;
+}
 
 interface AuthContextValue {
   currentUser: AuthUser | null;
@@ -38,6 +48,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       window.localStorage.removeItem(STORAGE_KEY);
     }
+    // Sincroniza el rol con el axios client: ver `setAuthRole` para el
+    // contexto del header `x-user-role`. Cuando aterrice auth real, esta
+    // sincronización pasa a ser un token Bearer.
+    setAuthRole(pickPrimaryRole(currentUser));
   }, [currentUser]);
 
   const login = useCallback((username: string, password: string) => {

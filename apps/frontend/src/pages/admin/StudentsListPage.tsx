@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Plus, ArrowUpRight, Pencil, Trash2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -26,6 +27,7 @@ import {
 } from '@/features/students/components/StudentSheet';
 import type { StudentDto } from '@academiaplaton/shared';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { cn } from '@/lib/utils';
 
 const ORG_ID = '00000000-0000-0000-0000-000000000001';
 
@@ -52,6 +54,7 @@ function formToStudentFields(data: StudentFormValues) {
     notes: toOptional(data.notes),
     monthlyFee: data.monthlyFee,
     paymentMethod: data.paymentMethod,
+    active: data.active,
     guardians: data.guardians.map((g) => ({
       firstName: g.firstName,
       lastName: g.lastName,
@@ -63,6 +66,7 @@ function formToStudentFields(data: StudentFormValues) {
 }
 
 type FeeFilter = 'any' | 'none' | 'has';
+type StatusFilter = 'any' | 'active' | 'inactive';
 
 const initialFilters = {
   search: '',
@@ -72,6 +76,8 @@ const initialFilters = {
   phone: '',
   centerId: '',
   fee: 'any' as FeeFilter,
+  // Por defecto ocultamos bajas — coherente con que "active" sea el caso típico.
+  status: 'active' as StatusFilter,
 };
 
 function includesCi(haystack: string | null | undefined, needle: string): boolean {
@@ -124,7 +130,8 @@ export function StudentsListPage() {
     filters.email !== '' ||
     filters.phone !== '' ||
     filters.centerId !== '' ||
-    filters.fee !== 'any';
+    filters.fee !== 'any' ||
+    filters.status !== 'active';
 
   function clearFilters() {
     setFilters(initialFilters);
@@ -135,6 +142,8 @@ export function StudentsListPage() {
     return students.filter((s) => {
       if (scopedCenter !== null && s.centerId !== scopedCenter) return false;
       if (filters.centerId && s.centerId !== filters.centerId) return false;
+      if (filters.status === 'active' && !s.active) return false;
+      if (filters.status === 'inactive' && s.active) return false;
       if (filters.fee === 'none' && s.monthlyFee != null) return false;
       if (filters.fee === 'has' && s.monthlyFee == null) return false;
 
@@ -290,6 +299,19 @@ export function StudentsListPage() {
             <option value="none">{t('students.filter.fee_none')}</option>
           </select>
         </FilterField>
+
+        <FilterField label={t('common.status')}>
+          <select
+            className={filterSelectClass}
+            value={filters.status}
+            onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value as StatusFilter }))}
+            aria-label={t('students.filter.status_aria')}
+          >
+            <option value="active">{t('students.filter.status_active')}</option>
+            <option value="inactive">{t('students.filter.status_inactive')}</option>
+            <option value="any">{t('students.filter.status_any')}</option>
+          </select>
+        </FilterField>
       </FilterBar>
 
       <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
@@ -318,10 +340,21 @@ export function StudentsListPage() {
                 </TableRow>
               ) : (
                 filtered.map((s, idx) => (
-                  <TableRow key={s.id} className="hover:bg-muted/30">
+                  <TableRow
+                    key={s.id}
+                    className={cn(
+                      'hover:bg-muted/30',
+                      !s.active && 'opacity-60',
+                    )}
+                  >
                     <TableCell className="font-medium text-muted-foreground hidden sm:table-cell">{idx + 1}</TableCell>
                     <TableCell className="font-medium">
-                      {s.firstName} {s.lastName}
+                      <span>{s.firstName} {s.lastName}</span>
+                      {!s.active && (
+                        <Badge variant="outline" className="ml-2 text-[10px]">
+                          {t('students.badge.inactive')}
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-muted-foreground hidden md:table-cell">
                       {centerById.get(s.centerId)?.name ?? '—'}

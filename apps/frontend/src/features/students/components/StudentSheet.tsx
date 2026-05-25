@@ -67,6 +67,9 @@ const studentSchema = z.object({
     .max(99999, 'Importe demasiado alto')
     .optional(),
   paymentMethod: z.enum(PAYMENT_METHOD_OPTIONS),
+  // Alumno activo. Default true en create. Cuando es false, el backend lo
+  // excluye del cómputo de `feesAuto` en el resumen mensual de contabilidad.
+  active: z.boolean(),
   guardians: z.array(guardianSchema).max(4, 'Máximo 4 tutores'),
 });
 
@@ -137,6 +140,7 @@ function StudentForm({
             notes: student.notes ?? '',
             monthlyFee: student.monthlyFee,
             paymentMethod: coercePaymentMethod(student.paymentMethod),
+            active: student.active,
             guardians: student.guardians.map((g) => ({
               firstName: g.firstName,
               lastName: g.lastName,
@@ -156,6 +160,7 @@ function StudentForm({
             notes: '',
             monthlyFee: undefined,
             paymentMethod: 'cash' as const,
+            active: true,
             guardians: [],
           },
   });
@@ -367,6 +372,22 @@ function StudentForm({
           {errors.notes && (
             <p role="alert" className="text-xs text-destructive">{errors.notes.message}</p>
           )}
+        </div>
+
+        {/* Activo (baja) — afecta a contabilidad: ver helper */}
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="student-active" className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+            <input
+              id="student-active"
+              type="checkbox"
+              className="h-4 w-4 rounded border-input"
+              {...register('active')}
+            />
+            <span>{t('student_sheet.field.active')}</span>
+          </label>
+          <p className="text-xs text-muted-foreground">
+            {t('students.active.helper')}
+          </p>
         </div>
 
         <Separator />
