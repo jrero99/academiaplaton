@@ -1,66 +1,57 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { api, getErrorMessage } from '@/lib/api';
+import { useCallback, useMemo, useSyncExternalStore } from 'react';
 import type {
   ExpenseCategoryCreate,
   ExpenseCategoryDto,
   ExpenseCategoryFilters,
   ExpenseCategoryUpdate,
 } from '@academiaplaton/shared';
+import {
+  createCategory,
+  deleteCategory,
+  getAccountingSnapshot,
+  listCategories,
+  subscribeAccounting,
+  updateCategory,
+} from '../data/mock-store';
 
-interface State {
-  categories: ExpenseCategoryDto[];
-  loading: boolean;
-  error: string | null;
-}
-
-const initialState: State = { categories: [], loading: true, error: null };
-
+// Hook mock-only: lee del store en memoria y filtra al vuelo. Cualquier
+// mutación llama al store y la suscripción dispara re-render automático.
 export function useAccountingCategories(filters?: ExpenseCategoryFilters) {
-  const [state, setState] = useState<State>(initialState);
+  // Suscripción al store — re-renderiza cuando cambian las categorías.
+  useSyncExternalStore(subscribeAccounting, getAccountingSnapshot, getAccountingSnapshot);
 
-  // Estabilizamos la clave para que el callback solo cambie cuando lo hace el
-  // contenido de los filtros, no la referencia.
+  // Estabilizamos la clave de filtros para no recalcular en cada render
+  // cuando el consumidor pasa un objeto literal nuevo.
   const filtersKey = useMemo(() => JSON.stringify(filters ?? {}), [filters]);
+  const categories = useMemo(
+    () => listCategories(filters),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filtersKey, getAccountingSnapshot()],
+  );
 
   const refetch = useCallback(async () => {
-    setState((s) => ({ ...s, loading: true, error: null }));
-    try {
-      const res = await api.get<ExpenseCategoryDto[]>('/api/accounting/categories', {
-        params: filters,
-      });
-      setState({ categories: res.data, loading: false, error: null });
-    } catch (err) {
-      setState({ categories: [], loading: false, error: getErrorMessage(err) });
-    }
-    // `filters` se referencia dentro del callback pero su identidad varía
-    // en cada render del consumidor; usamos `filtersKey` como dependencia
-    // estable y opt-out explícito de la regla de exhaustividad.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtersKey]);
+    /* no-op: el store ya es la fuente de verdad y reactiva. */
+  }, []);
 
-  useEffect(() => {
-    // Auto-fetch en montaje y cuando cambian los filtros. Ver nota en
-    // useAccountingSummary sobre por qué se silencia set-state-in-effect.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void refetch();
-  }, [refetch]);
+  const create = useCallback(async (input: ExpenseCategoryCreate): Promise<ExpenseCategoryDto> => {
+    return createCategory(input);
+  }, []);
 
-  const create = useCallback(async (input: ExpenseCategoryCreate) => {
-    const res = await api.post<ExpenseCategoryDto>('/api/accounting/categories', input);
-    await refetch();
-    return res.data;
-  }, [refetch]);
+  const update = useCallback(async (id: string, input: ExpenseCategoryUpdate): Promise<ExpenseCategoryDto> => {
+    return updateCategory(id, input);
+  }, []);
 
-  const update = useCallback(async (id: string, input: ExpenseCategoryUpdate) => {
-    const res = await api.patch<ExpenseCategoryDto>(`/api/accounting/categories/${id}`, input);
-    await refetch();
-    return res.data;
-  }, [refetch]);
+  const remove = useCallback(async (id: string): Promise<void> => {
+    deleteCategory(id);
+  }, []);
 
-  const remove = useCallback(async (id: string) => {
-    await api.delete(`/api/accounting/categories/${id}`);
-    await refetch();
-  }, [refetch]);
-
-  return { ...state, refetch, create, update, remove };
+  return {
+    categories,
+    loading: false,
+    error: null as string | null,
+    refetch,
+    create,
+    update,
+    remove,
+  };
 }

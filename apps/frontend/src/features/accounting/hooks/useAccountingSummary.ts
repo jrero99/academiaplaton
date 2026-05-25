@@ -1,54 +1,33 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { api, getErrorMessage } from '@/lib/api';
+import { useCallback, useSyncExternalStore } from 'react';
 import type { MonthlySummaryDto, PeriodMonth } from '@academiaplaton/shared';
+import {
+  buildSummary,
+  getAccountingSnapshot,
+  subscribeAccounting,
+} from '../data/mock-store';
 
-interface State {
-  summary: MonthlySummaryDto | null;
-  loading: boolean;
-  error: string | null;
-}
-
+// Hook mock-only: el summary se recalcula desde el store en memoria cada
+// vez que cambia algo (categorías, plantillas, gastos, ingresos) o cuando
+// el componente cambia de centro/mes.
 export function useAccountingSummary(
   centerId: string | 'all',
   month: PeriodMonth | null,
 ) {
-  const [state, setState] = useState<State>({
-    summary: null,
-    loading: month != null,
-    error: null,
-  });
+  // Re-render cuando el store cambia.
+  useSyncExternalStore(subscribeAccounting, getAccountingSnapshot, getAccountingSnapshot);
 
-  // Permite cancelar respuestas obsoletas si el usuario cambia rápido de mes
-  // o centro: solo aceptamos la respuesta del último fetch lanzado.
-  const reqIdRef = useRef(0);
+  const summary: MonthlySummaryDto | null = month ? buildSummary(centerId, month) : null;
 
+  // En el modelo mock no hay fetch real. `refetch` queda como no-op para
+  // mantener la firma; cualquier mutación al store ya dispara el re-render.
   const refetch = useCallback(async () => {
-    if (!month) {
-      setState({ summary: null, loading: false, error: null });
-      return;
-    }
-    const reqId = ++reqIdRef.current;
-    setState((s) => ({ ...s, loading: true, error: null }));
-    try {
-      const res = await api.get<MonthlySummaryDto>('/api/accounting/summary', {
-        params: { centerId, month },
-      });
-      if (reqId !== reqIdRef.current) return;
-      setState({ summary: res.data, loading: false, error: null });
-    } catch (err) {
-      if (reqId !== reqIdRef.current) return;
-      setState({ summary: null, loading: false, error: getErrorMessage(err) });
-    }
-  }, [centerId, month]);
+    /* no-op */
+  }, []);
 
-  useEffect(() => {
-    // El hook está pensado para auto-fetchear cuando cambian centerId/month.
-    // La regla react-hooks/set-state-in-effect señala el setState que ocurre
-    // tras la resolución de la promesa, pero aquí es deliberado: estamos
-    // sincronizando el caché local del componente con un servidor externo.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void refetch();
-  }, [refetch]);
-
-  return { ...state, refetch };
+  return {
+    summary,
+    loading: false,
+    error: null as string | null,
+    refetch,
+  };
 }

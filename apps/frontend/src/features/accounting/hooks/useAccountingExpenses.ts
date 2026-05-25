@@ -1,15 +1,19 @@
 import { useCallback } from 'react';
-import { api } from '@/lib/api';
 import type {
   ExpenseCreate,
   ExpenseDto,
   ExpenseUpdate,
 } from '@academiaplaton/shared';
+import {
+  createExpense,
+  deleteExpense,
+  updateExpense,
+} from '../data/mock-store';
 
 // El listado completo de Expenses ya lo expone el summary mensual, así que
 // este hook solo cubre las mutaciones (create/update/delete) que las sheets
-// consumen. Devolvemos los datos + un callback `onMutated` opcional que la
-// página invocará para refrescar el summary tras la operación.
+// consumen. `onMutated` se mantiene por compatibilidad de firma pero ya no
+// hace falta — el store reactivo dispara los re-renders por sí solo.
 
 interface Options {
   onMutated?: () => void;
@@ -17,19 +21,19 @@ interface Options {
 
 export function useAccountingExpenses({ onMutated }: Options = {}) {
   const create = useCallback(async (input: ExpenseCreate): Promise<ExpenseDto> => {
-    const res = await api.post<ExpenseDto>('/api/accounting/expenses', input);
+    const created = createExpense(input);
     onMutated?.();
-    return res.data;
+    return created;
   }, [onMutated]);
 
   const update = useCallback(async (id: string, input: ExpenseUpdate): Promise<ExpenseDto> => {
-    const res = await api.patch<ExpenseDto>(`/api/accounting/expenses/${id}`, input);
+    const updated = updateExpense(id, input);
     onMutated?.();
-    return res.data;
+    return updated;
   }, [onMutated]);
 
   const remove = useCallback(async (id: string): Promise<void> => {
-    await api.delete(`/api/accounting/expenses/${id}`);
+    deleteExpense(id);
     onMutated?.();
   }, [onMutated]);
 

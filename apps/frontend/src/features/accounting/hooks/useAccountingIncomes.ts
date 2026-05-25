@@ -1,10 +1,14 @@
 import { useCallback } from 'react';
-import { api } from '@/lib/api';
 import type {
   IncomeCreate,
   IncomeDto,
   IncomeUpdate,
 } from '@academiaplaton/shared';
+import {
+  createIncome,
+  deleteIncome,
+  updateIncome,
+} from '../data/mock-store';
 
 interface Options {
   onMutated?: () => void;
@@ -12,19 +16,19 @@ interface Options {
 
 export function useAccountingIncomes({ onMutated }: Options = {}) {
   const create = useCallback(async (input: IncomeCreate): Promise<IncomeDto> => {
-    const res = await api.post<IncomeDto>('/api/accounting/incomes', input);
+    const created = createIncome(input);
     onMutated?.();
-    return res.data;
+    return created;
   }, [onMutated]);
 
   const update = useCallback(async (id: string, input: IncomeUpdate): Promise<IncomeDto> => {
-    const res = await api.patch<IncomeDto>(`/api/accounting/incomes/${id}`, input);
+    const updated = updateIncome(id, input);
     onMutated?.();
-    return res.data;
+    return updated;
   }, [onMutated]);
 
   const remove = useCallback(async (id: string): Promise<void> => {
-    await api.delete(`/api/accounting/incomes/${id}`);
+    deleteIncome(id);
     onMutated?.();
   }, [onMutated]);
 

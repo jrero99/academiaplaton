@@ -1,9 +1,9 @@
 import { useCallback, useState } from 'react';
-import { api, getErrorMessage } from '@/lib/api';
 import type {
   GenerateMonthInput,
   GenerateMonthResult,
 } from '@academiaplaton/shared';
+import { generateMonthMock } from '../data/mock-store';
 
 interface State {
   loading: boolean;
@@ -19,14 +19,11 @@ export function useGenerateMonth() {
   const generate = useCallback(async (input: GenerateMonthInput): Promise<GenerateMonthResult> => {
     setState({ loading: true, error: null, result: null });
     try {
-      const res = await api.post<GenerateMonthResult>(
-        '/api/accounting/generate-month',
-        input,
-      );
-      setState({ loading: false, error: null, result: res.data });
-      return res.data;
+      const result = generateMonthMock(input);
+      setState({ loading: false, error: null, result });
+      return result;
     } catch (err) {
-      const msg = getErrorMessage(err);
+      const msg = err instanceof Error ? err.message : 'Error al generar el mes';
       setState({ loading: false, error: msg, result: null });
       throw err;
     }
