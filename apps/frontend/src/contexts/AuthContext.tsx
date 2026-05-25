@@ -14,11 +14,19 @@ import { setAuthRole } from '@/lib/api';
 const STORAGE_KEY = 'plato.auth.currentUserId';
 
 // Determina el rol "principal" que enviamos como cabecera x-user-role al
-// backend mientras no haya auth real. Si el usuario tiene 'admin', usamos
-// 'admin' (caso de roles compuestos como admin+teacher); si no, el primer rol.
+// backend mientras no haya auth real. El header debe reflejar el rol efectivo
+// (el más privilegiado), no el primero del array: si un usuario tiene
+// ['teacher','admin'] el backend debe ver 'admin' o `requireAdmin` denegará
+// con 403 una operación que sí está autorizada. Jerarquía:
+// admin > center_manager > teacher > resto (orden de aparición en el array).
+const ROLE_PRIORITY: readonly string[] = ['admin', 'center_manager', 'teacher'];
+
 function pickPrimaryRole(user: AuthUser | null): string | null {
   if (!user) return null;
-  if (user.roles.includes('admin')) return 'admin';
+  if (user.roles.length === 0) return null;
+  for (const role of ROLE_PRIORITY) {
+    if (user.roles.includes(role as AuthUser['roles'][number])) return role;
+  }
   return user.roles[0] ?? null;
 }
 
