@@ -63,17 +63,21 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships  UserOrganization[]
-  leads        Lead[]
-  students     Student[]
-  teachers     Teacher[]
-  centers      Center[]
-  groups       Group[]
-  sessions     Session[]
-  sepaMandates SepaMandate[]
-  invoices     Invoice[]
-  attendances  Attendance[]
-  teacherRates TeacherRate[]
+  memberships       UserOrganization[]
+  leads             Lead[]
+  students          Student[]
+  teachers          Teacher[]
+  centers           Center[]
+  groups            Group[]
+  sessions          Session[]
+  sepaMandates      SepaMandate[]
+  invoices          Invoice[]
+  attendances       Attendance[]
+  teacherRates      TeacherRate[]
+  expenseCategories ExpenseCategory[]
+  expenseTemplates  ExpenseTemplate[]
+  expenses          Expense[]
+  incomes           Income[]
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -93,11 +97,14 @@ model Center {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  students     Student[]
-  teachers     Teacher[]
-  groups       Group[]
-  sessions     Session[]
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  students         Student[]
+  teachers         Teacher[]
+  groups           Group[]
+  sessions         Session[]
+  expenseTemplates ExpenseTemplate[]
+  expenses         Expense[]
+  incomes          Income[]
 
   @@unique([organizationId, slug])
   @@index([organizationId, active])
@@ -206,6 +213,31 @@ enum InvoiceStatus {
   cancelled  // anulada
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Enums — módulo accounting (contabilidad solo-admin)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Método de pago para gastos e ingresos manuales del módulo contabilidad.
+// Separado de PaymentMethod (alumno) porque las categorías difieren: aquí
+// trabajamos con SEPA (recibos), transferencia, efectivo y "otros".
+enum ExpensePaymentMethod {
+  sepa
+  transfer
+  cash
+  other
+}
+
+// Origen del gasto: manual (introducido a mano), template_gen (generado por
+// una plantilla recurrente al cerrar un mes) o salary_auto (calculado a partir
+// de horas trabajadas por un profesor en sus Session). originType permite
+// distinguir un override manual de un salario autogenerado y evitar duplicados
+// al regenerar un mes.
+enum ExpenseOriginType {
+  manual
+  template_gen
+  salary_auto
+}
+
 model Lead {
   id               String     @id @default(uuid()) @db.Char(36)
   organizationId   String     @db.Char(36)
@@ -258,6 +290,10 @@ model Student {
   // Varios alumnos (hermanos) pueden compartir el mismo mandato → N:1.
   sepaMandateId String?      @db.Char(36)
   sepaMandate   SepaMandate? @relation(fields: [sepaMandateId], references: [id], onDelete: SetNull)
+
+  // Alumno activo. Al desactivar deja de sumar a feesAuto en el summary
+  // mensual y la UI puede ocultarlo o marcarlo como baja sin perder histórico.
+  active Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -379,6 +415,12 @@ model Teacher {
   active         Boolean @default(true)
   notes          String? @db.Text
 
+  // Tarifa bruta por hora trabajada (€/h). Base del cálculo de salario en el
+  // módulo accounting: salario = sum(durationMinutes/60) * hourlyRate por mes.
+  // Opcional para profesores legacy sin tarifa configurada; el cálculo de
+  // nómina los reporta con un warning.
+  hourlyRate     Decimal? @db.Decimal(8, 2)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -387,6 +429,7 @@ model Teacher {
   groups       Group[]
   sessions     Session[]
   memberships  UserOrganization[]
+  expenses     Expense[]
 
   @@unique([organizationId, email])
   // Unicidad de color por centro. MySQL trata cada NULL como distinto, así que
@@ -559,4 +602,141 @@ model Attendance {
   @@unique([sessionId, studentId])
   @@index([organizationId, sessionId])
   @@index([organizationId, studentId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Accounting — Contabilidad solo-admin por centro y mes.
+//
+// Modelo:
+//   ExpenseCategory   — taxonomía de gasto (Lloguer, Autònoms, Nóminas, ...).
+//                       Una categoría puede marcarse `isSalary` para indicar
+//                       que los Expense en ella son nóminas autogeneradas.
+//   ExpenseTemplate   — plantilla recurrente por (center, category) con
+//                       importe y día de cargo. Sirve para materializar los
+//                       Expense del mes con un solo clic.
+//   Expense           — gasto concreto del mes. originType distingue manual
+//                       (creado a mano), template_gen (generado al cerrar el
+//                       mes desde una plantilla) o salary_auto (calculado
+//                       desde horas de profesor).
+//   Income            — ingreso manual (efectivo, ingresos extras, etc.).
+//                       Las cuotas mensuales de alumnos NO se persisten aquí
+//                       — se calculan on-the-fly en el summaryService.
+//
+// Decisión cerrada: un único concepto de "beneficio" = ingresos − gastos.
+// No hay distinción A/REAL en el modelo. La separación efectivo/bancario se
+// implementa como un filtro por paymentMethod en el resumen.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ExpenseCategory {
+  id             String  @id @default(uuid()) @db.Char(36)
+  organizationId String  @db.Char(36)
+  name           String  @db.VarChar(120)
+  // Slug interno estable (lloguer, autonoms, nomines, ...) usado en seeds y
+  // para que el frontend pueda mostrar etiquetas/iconos sin depender del id.
+  slug           String  @db.VarChar(80)
+  // true para la categoría que agrupa las nóminas autogeneradas. Solo debería
+  // haber una por organización; validación de unicidad lógica en el service.
+  isSalary       Boolean @default(false)
+  sortOrder      Int     @default(0)
+  active         Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  templates    ExpenseTemplate[]
+  expenses     Expense[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId, active])
+  @@index([organizationId, isSalary])
+}
+
+model ExpenseTemplate {
+  id               String  @id @default(uuid()) @db.Char(36)
+  organizationId   String  @db.Char(36)
+  centerId         String  @db.Char(36)
+  categoryId       String  @db.Char(36)
+  defaultAmount    Decimal @db.Decimal(10, 2)
+  // Día del mes (1..31) en que normalmente se cobra. Opcional: si nulo, no se
+  // populariza ningún paidAt al generar Expense desde la plantilla.
+  chargeDayOfMonth Int?    @db.UnsignedTinyInt
+  description      String? @db.VarChar(240)
+  // Default del método de pago del Expense generado. Almacenado como String
+  // para alinear con el resto del repo, validado por Zod contra el enum.
+  paymentMethod    ExpensePaymentMethod @default(sepa)
+  active           Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  center       Center          @relation(fields: [centerId], references: [id], onDelete: Restrict)
+  category     ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  expenses     Expense[]
+
+  @@index([organizationId, centerId, active])
+  @@index([organizationId, categoryId])
+}
+
+model Expense {
+  id             String  @id @default(uuid()) @db.Char(36)
+  organizationId String  @db.Char(36)
+  centerId       String  @db.Char(36)
+  categoryId     String  @db.Char(36)
+  // Plantilla origen (cuando originType=template_gen). Permite saber qué
+  // plantillas ya generaron Expense para un mes y evitar duplicados.
+  templateId     String? @db.Char(36)
+  // Profesor asociado cuando originType=salary_auto. Permite distinguir y
+  // recomputar la nómina de un profe sin afectar a otros gastos.
+  teacherId      String? @db.Char(36)
+  // Periodo contable al que pertenece el gasto, formato "YYYY-MM".
+  periodMonth    String  @db.Char(7)
+  amount         Decimal @db.Decimal(10, 2)
+  paymentMethod  ExpensePaymentMethod @default(sepa)
+  originType     ExpenseOriginType    @default(manual)
+  // Fecha real de cargo en cuenta (si ya cobrado). Independiente de periodMonth.
+  paidAt         DateTime? @db.Date
+  // Soft-delete: permite anular sin perder histórico ni romper agregados pasados.
+  active         Boolean @default(true)
+  notes          String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  center       Center           @relation(fields: [centerId], references: [id], onDelete: Restrict)
+  category     ExpenseCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  template     ExpenseTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  teacher      Teacher?         @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, centerId, periodMonth])
+  @@index([organizationId, periodMonth])
+  @@index([organizationId, teacherId, periodMonth])
+  @@index([organizationId, categoryId, periodMonth])
+  @@index([organizationId, templateId, periodMonth])
+}
+
+model Income {
+  id             String  @id @default(uuid()) @db.Char(36)
+  organizationId String  @db.Char(36)
+  centerId       String  @db.Char(36)
+  periodMonth    String  @db.Char(7)
+  amount         Decimal @db.Decimal(10, 2)
+  // Reusa el mismo enum que Expense por simetría y para que el resumen pueda
+  // agregar ingresos/gastos por método sin mapeo manual.
+  paymentMethod  ExpensePaymentMethod @default(cash)
+  source         String  @db.VarChar(120)
+  receivedAt     DateTime? @db.Date
+  notes          String? @db.Text
+  active         Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  center       Center       @relation(fields: [centerId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, centerId, periodMonth])
+  @@index([organizationId, periodMonth])
 }

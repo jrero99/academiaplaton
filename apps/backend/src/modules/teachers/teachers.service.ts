@@ -23,6 +23,7 @@ function toDto(t: Teacher): TeacherDto {
     color: (t.color as TeacherColorId | null) ?? undefined,
     active: t.active,
     notes: t.notes ?? undefined,
+    hourlyRate: t.hourlyRate != null ? t.hourlyRate.toNumber() : undefined,
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),
   };

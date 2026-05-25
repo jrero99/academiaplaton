@@ -36,6 +36,8 @@ export const StudentCreateSchema = z.object({
   guardians: z.array(GuardianSchema).max(4).default([]),
   groupId: z.string().uuid().optional(),
   fromLeadId: z.string().uuid().optional(),
+  // Alumno activo: false = baja (no se contabiliza en feesAuto del summary).
+  active: z.boolean().default(true),
 });
 export type StudentCreate = z.infer<typeof StudentCreateSchema>;
 
@@ -45,6 +47,7 @@ export type StudentUpdate = z.infer<typeof StudentUpdateSchema>;
 export const StudentDtoSchema = StudentCreateSchema.extend({
   id: z.string().uuid(),
   organizationId: z.string().uuid(),
+  active: z.boolean(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });

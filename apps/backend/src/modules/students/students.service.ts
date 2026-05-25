@@ -32,6 +32,7 @@ function toDto(s: StudentWithGuardians): StudentDto {
     paymentMethod: s.paymentMethod,
     sepaMandateId: s.sepaMandateId ?? undefined,
     fromLeadId: s.fromLeadId ?? undefined,
+    active: s.active,
     guardians: s.guardians.map((g) => ({
       firstName: g.firstName,
       lastName: g.lastName,
@@ -104,6 +105,7 @@ export const studentsService = {
     const created = await studentsRepo.create({
       ...rest,
       birthDate: new Date(input.birthDate),
+      active: input.active ?? true,
       ...(monthlyFee !== undefined && { monthlyFee: new Prisma.Decimal(monthlyFee) }),
       organization: { connect: { id: organizationId } },
       center: { connect: { id: centerId } },

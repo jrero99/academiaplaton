@@ -14,6 +14,9 @@ export const TeacherCreateSchema = z.object({
   color: TeacherColorSchema.optional(),
   active: z.boolean().default(true),
   notes: z.string().max(2000).optional(),
+  // Tarifa bruta por hora (€/h). Base del cálculo de nómina en accounting.
+  // Opcional: profesores legacy sin tarifa quedan reportados con warning.
+  hourlyRate: z.number().nonnegative().max(9999).optional(),
 });
 export type TeacherCreate = z.infer<typeof TeacherCreateSchema>;
 
@@ -31,6 +34,7 @@ export const TeacherDtoSchema = z.object({
   color: TeacherColorSchema.optional(),
   active: z.boolean(),
   notes: z.string().optional(),
+  hourlyRate: z.number().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });

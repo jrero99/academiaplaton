@@ -10,4 +10,5 @@ export * from './scheduling.js';
 export * from './sessions.js';
 export * from './billing.js';
 export * from './attendance.js';
+export * from './accounting.js';
 export * from './errors.js';
