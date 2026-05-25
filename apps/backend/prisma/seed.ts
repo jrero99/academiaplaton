@@ -102,8 +102,14 @@ const EXPENSE_SEEDS_APR_2026: SeedExpense[] = [
 ];
 
 // Ingresos manuales (no automáticos por cuotas) de abril 2026 según PDF.
-// Solo Teresas tiene desglose claro de efectivo; Molinos en el PDF sólo
-// aparece el total sin separar cash/recibos, así que no se siembra.
+//
+// IMPORTANTE: en el modelo de Contabilidad los "Rebuts" se calculan
+// automáticamente a partir de Student.monthlyFee × alumnos activos del
+// centro en el periodo. Como este seed NO crea alumnos, esa línea
+// automática sale a 0. Para que el demo cuadre con el PDF de abril 2026
+// se meten los rebuts como Income MANUAL (paymentMethod=sepa,
+// source="Rebuts abril"). Cuando se seedeen alumnos reales con cuota,
+// hay que ELIMINAR estas entradas o el total se contará dos veces.
 type SeedIncome = {
   centerId: string;
   amount: string;
@@ -112,11 +118,26 @@ type SeedIncome = {
 };
 
 const INCOME_SEEDS_APR_2026: SeedIncome[] = [
+  // Plató Teresas — desglose del PDF: Rebuts 6210€ + Efectivo 4250€ = 10460€.
+  {
+    centerId: CENTER_TERESAS,
+    amount: '6210.00',
+    paymentMethod: 'sepa',
+    source: 'Rebuts abril',
+  },
   {
     centerId: CENTER_TERESAS,
     amount: '4250.00',
     paymentMethod: 'cash',
     source: 'Efectivo abril',
+  },
+  // Plató Molinos — el PDF no desglosa: total mensual 8850€. Se mete como
+  // un único ingreso "Ingresos abril (mixto)" hasta tener desglose real.
+  {
+    centerId: CENTER_MOLINOS,
+    amount: '8850.00',
+    paymentMethod: 'sepa',
+    source: 'Ingresos abril (mixto)',
   },
 ];
 
