@@ -16,6 +16,21 @@ import type { InvoiceDto, StudentDto } from '@academiaplaton/shared';
 const BURGUNDY = '#691a37';
 const CREAM = '#f4cea1';
 
+// Datos fiscales del emisor que aparecen en el pie del PDF.
+// TODO multi-tenant: cuando Organization tenga campos fiscales propios
+// (legalName, taxId, addresses[], phone, email), leer de ahí y dejar
+// estos valores solo como fallback para el tenant Plató.
+const ORG_FISCAL_INFO = {
+  legalName: "Centre d'Estudis Plató SCP",
+  taxId: 'J22564140',
+  addresses: [
+    'Plaça de les Tereses, 16 (1er - 1a) — 08302 Mataró',
+    'Passeig Desviament, 9 — 08304 Mataró',
+  ],
+  phone: '601082290',
+  email: 'estudisplato@gmail.com',
+} as const;
+
 interface OpenInvoicePdfParams {
   invoice: InvoiceDto;
   student: StudentDto;
@@ -245,12 +260,15 @@ function buildHtml({ invoice, student, organizationName, centerName, t, locale }
   }
 
   footer.bottom {
-    margin-top: auto; padding-top: 32px;
+    margin-top: auto; padding-top: 24px;
     border-top: 1px solid var(--border);
     font-size: 10px; color: var(--muted); text-align: center;
     line-height: 1.6;
   }
-  footer.bottom strong { color: var(--burgundy); font-weight: 700; }
+  footer.bottom .legal-name { color: var(--burgundy); font-weight: 700; }
+  footer.bottom .addresses { margin-top: 4px; }
+  footer.bottom .contact { margin-top: 4px; }
+  footer.bottom .contact a { color: var(--muted); text-decoration: none; }
 </style>
 </head>
 <body>
@@ -330,8 +348,16 @@ function buildHtml({ invoice, student, organizationName, centerName, t, locale }
     ${invoice.notes ? `<div class="notes">${escape(invoice.notes)}</div>` : ''}
 
     <footer class="bottom">
-      <strong>${escape(orgName)}</strong><br />
-      ${escape(t('invoices.pdf.footer', { number: invoice.number }))}
+      <div class="legal-name">
+        ${escape(ORG_FISCAL_INFO.legalName)} · CIF: ${escape(ORG_FISCAL_INFO.taxId)}
+      </div>
+      <div class="addresses">
+        ${ORG_FISCAL_INFO.addresses.map((a) => escape(a)).join(' &nbsp;·&nbsp; ')}
+      </div>
+      <div class="contact">
+        ${escape(ORG_FISCAL_INFO.phone)} &nbsp;·&nbsp;
+        <a href="mailto:${escape(ORG_FISCAL_INFO.email)}">${escape(ORG_FISCAL_INFO.email)}</a>
+      </div>
     </footer>
   </div>
 
