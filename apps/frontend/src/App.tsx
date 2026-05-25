@@ -12,6 +12,7 @@ import { CalendarPage } from '@/pages/admin/CalendarPage';
 import { ClockingPage } from '@/pages/admin/ClockingPage';
 import { CentersListPage } from '@/pages/admin/CentersListPage';
 import { InvoicesListPage } from '@/pages/admin/InvoicesListPage';
+import { SepaRemittancePage } from '@/pages/admin/SepaRemittancePage';
 import { StubPage } from '@/pages/admin/StubPage';
 import { WelcomePage } from '@/pages/WelcomePage';
 import { LoginPage } from '@/pages/LoginPage';
@@ -44,6 +45,7 @@ function App() {
                 {/* Sólo admin */}
                 <Route element={<ProtectedRoute roles={['admin']} redirectTo="/admin/calendar" />}>
                   <Route path="centers" element={<CentersListPage />} />
+                  <Route path="sepa-remittance" element={<SepaRemittancePage />} />
                 </Route>
 
                 {/* Accesible para todos los logueados */}

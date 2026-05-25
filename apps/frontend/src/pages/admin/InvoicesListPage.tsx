@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Plus, Pencil, Trash2, FileText, Sparkles } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Plus, Pencil, Trash2, FileText, Sparkles, Banknote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -309,6 +310,14 @@ export function InvoicesListPage() {
             <Sparkles className="h-4 w-4" />
             {t('invoices.generate_month')}
           </Button>
+          {currentUser.roles.includes('admin') && (
+            <Button asChild variant="outline">
+              <Link to="/admin/sepa-remittance">
+                <Banknote className="h-4 w-4" />
+                Remesa SEPA
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 
